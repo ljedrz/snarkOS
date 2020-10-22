@@ -416,6 +416,7 @@ macro_rules! uint_impl {
                             &zero_result,
                         )
                         .unwrap()
+                        .into_owned()
                     })
                     .collect::<Vec<Self>>();
 
@@ -446,12 +447,13 @@ macro_rules! uint_impl {
                 }
 
                 let is_constant = Boolean::constant(Self::result_is_constant(&self, &other));
+                let bool_true = Boolean::constant(true);
 
                 let allocated_true = Boolean::from(AllocatedBit::alloc(&mut cs.ns(|| "true"), || Ok(true)).unwrap());
                 let true_bit = Boolean::conditionally_select(
                     &mut cs.ns(|| "constant_or_allocated_true"),
                     &is_constant,
-                    &Boolean::constant(true),
+                    &bool_true,
                     &allocated_true,
                 )?;
 
@@ -461,7 +463,8 @@ macro_rules! uint_impl {
                     &is_constant,
                     &Self::constant(1 as $_type),
                     &allocated_one,
-                )?;
+                )?
+                .into_owned();
 
                 let allocated_zero = Self::alloc(&mut cs.ns(|| "zero"), || Ok(0 as $_type))?;
                 let zero = Self::conditionally_select(
@@ -469,7 +472,8 @@ macro_rules! uint_impl {
                     &is_constant,
                     &Self::constant(0 as $_type),
                     &allocated_zero,
-                )?;
+                )?
+                .into_owned();
 
                 let self_is_zero = Boolean::Constant(self.eq(&Self::constant(0 as $_type)));
                 let mut quotient = zero.clone();
@@ -494,7 +498,8 @@ macro_rules! uint_impl {
                         &bit_is_true,
                         &new_remainder,
                         &remainder,
-                    )?;
+                    )?
+                    .into_owned();
 
                     // Greater than or equal to:
                     //   R >= D
@@ -519,12 +524,13 @@ macro_rules! uint_impl {
                         &cond2,
                         &subtraction,
                         &remainder,
-                    )?;
+                    )?
+                    .into_owned();
 
                     let index = $size - 1 - i as usize;
                     let bit_value = (1 as $_type) << (index as $_type);
                     let mut new_quotient = quotient.clone();
-                    new_quotient.bits[index] = true_bit.clone();
+                    new_quotient.bits[index] = *true_bit;
                     new_quotient.value = Some(new_quotient.value.unwrap() + bit_value);
 
                     quotient = Self::conditionally_select(
@@ -532,9 +538,11 @@ macro_rules! uint_impl {
                         &cond2,
                         &new_quotient,
                         &quotient,
-                    )?;
+                    )?
+                    .into_owned();
                 }
                 Self::conditionally_select(&mut cs.ns(|| "self_or_quotient"), &self_is_zero, self, &quotient)
+                    .map(std::borrow::Cow::into_owned)
             }
 
             fn pow<F: Field + PrimeField, CS: ConstraintSystem<F>>(
@@ -564,7 +572,8 @@ macro_rules! uint_impl {
                     &is_constant,
                     &constant_result,
                     &allocated_result,
-                )?;
+                )?
+                .into_owned();
 
                 for (i, bit) in other.bits.iter().rev().enumerate() {
                     result = result.mul(cs.ns(|| format!("square_{}", i)), &result).unwrap();
@@ -578,7 +587,8 @@ macro_rules! uint_impl {
                         &bit,
                         &mul_by_self,
                         &result,
-                    )?;
+                    )?
+                    .into_owned();
                 }
 
                 Ok(result)
@@ -723,17 +733,17 @@ macro_rules! uint_impl {
         }
 
         impl<F: PrimeField> CondSelectGadget<F> for $name {
-            fn conditionally_select<CS: ConstraintSystem<F>>(
+            fn conditionally_select<'a, CS: ConstraintSystem<F>>(
                 mut cs: CS,
                 cond: &Boolean,
-                first: &Self,
-                second: &Self,
-            ) -> Result<Self, SynthesisError> {
+                first: &'a Self,
+                second: &'a Self,
+            ) -> Result<std::borrow::Cow<'a, Self>, SynthesisError> {
                 if let Boolean::Constant(cond) = *cond {
                     if cond {
-                        Ok(first.clone())
+                        Ok(std::borrow::Cow::Borrowed(first))
                     } else {
-                        Ok(second.clone())
+                        Ok(std::borrow::Cow::Borrowed(second))
                     }
                 } else {
                     let mut is_negated = false;
@@ -766,13 +776,13 @@ macro_rules! uint_impl {
                             )
                             .unwrap()
                         })
-                        .collect::<Vec<Boolean>>();
+                        .collect::<Vec<_>>();
 
                     for (i, (actual, expected)) in result.to_bits_le().iter().zip(expected_bits.iter()).enumerate() {
                         actual.enforce_equal(&mut cs.ns(|| format!("selected_result_bit_{}", i)), expected)?;
                     }
 
-                    Ok(result)
+                    Ok(std::borrow::Cow::Owned(result))
                 }
             }
 

@@ -34,7 +34,10 @@ use snarkos_models::{
 };
 use snarkos_utilities::bititerator::BitIterator;
 
-use std::{borrow::Borrow, marker::PhantomData};
+use std::{
+    borrow::{Borrow, Cow},
+    marker::PhantomData,
+};
 
 #[cfg(test)]
 pub mod test;
@@ -855,7 +858,8 @@ mod projective_impl {
                     let bit = bits_base_powers[0].0;
                     let base_power = bits_base_powers[0].1;
                     let new_encoded = self.add_constant(&mut cs.ns(|| "Add base power"), &base_power)?;
-                    *self = Self::conditionally_select(&mut cs.ns(|| "Conditional Select"), &bit, &new_encoded, &self)?;
+                    *self = Self::conditionally_select(&mut cs.ns(|| "Conditional Select"), &bit, &new_encoded, &self)?
+                        .into_owned();
                 }
             }
 
@@ -904,7 +908,8 @@ mod projective_impl {
                         &bit,
                         &new_encoded_plus,
                         &new_encoded_minus,
-                    )?;
+                    )?
+                    .into_owned();
                 }
             }
 
@@ -1248,16 +1253,16 @@ mod projective_impl {
 
 impl<P: TEModelParameters, F: Field, FG: FieldGadget<P::BaseField, F>> CondSelectGadget<F> for AffineGadget<P, F, FG> {
     #[inline]
-    fn conditionally_select<CS: ConstraintSystem<F>>(
+    fn conditionally_select<'a, CS: ConstraintSystem<F>>(
         mut cs: CS,
         cond: &Boolean,
-        first: &Self,
-        second: &Self,
-    ) -> Result<Self, SynthesisError> {
+        first: &'a Self,
+        second: &'a Self,
+    ) -> Result<Cow<'a, Self>, SynthesisError> {
         let x = FG::conditionally_select(&mut cs.ns(|| "x"), cond, &first.x, &second.x)?;
         let y = FG::conditionally_select(&mut cs.ns(|| "y"), cond, &first.y, &second.y)?;
 
-        Ok(Self::new(x, y))
+        Ok(Cow::Owned(Self::new(x.into_owned(), y.into_owned())))
     }
 
     fn cost() -> usize {

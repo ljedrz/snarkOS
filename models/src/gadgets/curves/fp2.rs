@@ -32,7 +32,10 @@ use crate::{
 };
 use snarkos_errors::gadgets::SynthesisError;
 
-use std::{borrow::Borrow, marker::PhantomData};
+use std::{
+    borrow::{Borrow, Cow},
+    marker::PhantomData,
+};
 
 #[derive(Derivative)]
 #[derivative(Debug(bound = "P: Fp2Parameters, F: PrimeField"))]
@@ -505,16 +508,16 @@ impl<P: Fp2Parameters<Fp = F>, F: PrimeField> Clone for Fp2Gadget<P, F> {
 
 impl<P: Fp2Parameters<Fp = F>, F: PrimeField> CondSelectGadget<F> for Fp2Gadget<P, F> {
     #[inline]
-    fn conditionally_select<CS: ConstraintSystem<F>>(
+    fn conditionally_select<'a, CS: ConstraintSystem<F>>(
         mut cs: CS,
         cond: &Boolean,
-        first: &Self,
-        second: &Self,
-    ) -> Result<Self, SynthesisError> {
-        let c0 = FpGadget::<F>::conditionally_select(&mut cs.ns(|| "c0"), cond, &first.c0, &second.c0)?;
-        let c1 = FpGadget::<F>::conditionally_select(&mut cs.ns(|| "c1"), cond, &first.c1, &second.c1)?;
+        first: &'a Self,
+        second: &'a Self,
+    ) -> Result<Cow<'a, Self>, SynthesisError> {
+        let c0 = FpGadget::<F>::conditionally_select(&mut cs.ns(|| "c0"), cond, &first.c0, &second.c0)?.into_owned();
+        let c1 = FpGadget::<F>::conditionally_select(&mut cs.ns(|| "c1"), cond, &first.c1, &second.c1)?.into_owned();
 
-        Ok(Self::new(c0, c1))
+        Ok(Cow::Owned(Self::new(c0, c1)))
     }
 
     fn cost() -> usize {

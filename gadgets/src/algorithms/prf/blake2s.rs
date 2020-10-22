@@ -32,7 +32,7 @@ use snarkos_models::{
     },
 };
 
-use std::borrow::Borrow;
+use std::borrow::{Borrow, Cow};
 
 // 2.1.  Parameters
 // The following table summarizes various parameters and their ranges:
@@ -406,12 +406,12 @@ impl<F: PrimeField> ConditionalEqGadget<F> for Blake2sOutputGadget {
 }
 
 impl<F: PrimeField> CondSelectGadget<F> for Blake2sOutputGadget {
-    fn conditionally_select<CS: ConstraintSystem<F>>(
+    fn conditionally_select<'a, CS: ConstraintSystem<F>>(
         _cs: CS,
         _cond: &Boolean,
-        _first: &Self,
-        _second: &Self,
-    ) -> Result<Self, SynthesisError> {
+        _first: &'a Self,
+        _second: &'a Self,
+    ) -> Result<Cow<'a, Self>, SynthesisError> {
         unimplemented!()
     }
 

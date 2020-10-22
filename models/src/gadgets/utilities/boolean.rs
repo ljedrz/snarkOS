@@ -30,7 +30,7 @@ use crate::{
 use snarkos_errors::gadgets::SynthesisError;
 use snarkos_utilities::bititerator::BitIterator;
 
-use std::borrow::Borrow;
+use std::borrow::{Borrow, Cow};
 
 /// Represents a variable in the constraint system which is guaranteed
 /// to be either zero or one.
@@ -319,13 +319,13 @@ impl<F: Field> AllocGadget<bool, F> for AllocatedBit {
 }
 
 impl<F: PrimeField> CondSelectGadget<F> for AllocatedBit {
-    fn conditionally_select<CS: ConstraintSystem<F>>(
+    fn conditionally_select<'a, CS: ConstraintSystem<F>>(
         cs: CS,
         cond: &Boolean,
-        first: &Self,
-        second: &Self,
-    ) -> Result<Self, SynthesisError> {
-        cond_select_helper(cs, cond, (first.value, first.variable), (second.value, second.variable))
+        first: &'a Self,
+        second: &'a Self,
+    ) -> Result<Cow<'a, Self>, SynthesisError> {
+        cond_select_helper(cs, cond, (first.value, first.variable), (second.value, second.variable)).map(Cow::Owned)
     }
 
     fn cost() -> usize {
@@ -739,26 +739,33 @@ impl<F: Field> ToBytesGadget<F> for Boolean {
 }
 
 impl<F: PrimeField> CondSelectGadget<F> for Boolean {
-    fn conditionally_select<CS>(mut cs: CS, cond: &Self, first: &Self, second: &Self) -> Result<Self, SynthesisError>
+    fn conditionally_select<'a, CS>(
+        mut cs: CS,
+        cond: &Self,
+        first: &'a Self,
+        second: &'a Self,
+    ) -> Result<Cow<'a, Self>, SynthesisError>
     where
         CS: ConstraintSystem<F>,
     {
         match cond {
-            Boolean::Constant(true) => Ok(*first),
-            Boolean::Constant(false) => Ok(*second),
+            Boolean::Constant(true) => Ok(Cow::Borrowed(first)),
+            Boolean::Constant(false) => Ok(Cow::Borrowed(second)),
             cond @ Boolean::Not(_) => Self::conditionally_select(cs, &cond.not(), second, first),
             cond @ Boolean::Is(_) => match (first, second) {
-                (x, &Boolean::Constant(false)) => Boolean::and(cs.ns(|| "and"), cond, x),
-                (&Boolean::Constant(false), x) => Boolean::and(cs.ns(|| "and"), &cond.not(), x),
-                (&Boolean::Constant(true), x) => Boolean::or(cs.ns(|| "or"), cond, x),
-                (x, &Boolean::Constant(true)) => Boolean::or(cs.ns(|| "or"), &cond.not(), x),
+                (x, &Boolean::Constant(false)) => Boolean::and(cs.ns(|| "and"), cond, x).map(Cow::Owned),
+                (&Boolean::Constant(false), x) => Boolean::and(cs.ns(|| "and"), &cond.not(), x).map(Cow::Owned),
+                (&Boolean::Constant(true), x) => Boolean::or(cs.ns(|| "or"), cond, x).map(Cow::Owned),
+                (x, &Boolean::Constant(true)) => Boolean::or(cs.ns(|| "or"), &cond.not(), x).map(Cow::Owned),
                 (a @ Boolean::Is(_), b @ Boolean::Is(_))
                 | (a @ Boolean::Not(_), b @ Boolean::Not(_))
                 | (a @ Boolean::Is(_), b @ Boolean::Not(_))
                 | (a @ Boolean::Not(_), b @ Boolean::Is(_)) => {
                     let a_lc = a.lc(CS::one(), F::one());
                     let b_lc = b.lc(CS::one(), F::one());
-                    Ok(cond_select_helper(cs, cond, (a.get_value(), a_lc), (b.get_value(), b_lc))?.into())
+                    Ok(Cow::Owned(
+                        cond_select_helper(cs, cond, (a.get_value(), a_lc), (b.get_value(), b_lc))?.into(),
+                    ))
                 }
             },
         }

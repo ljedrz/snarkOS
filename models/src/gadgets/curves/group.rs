@@ -89,7 +89,8 @@ pub trait GroupGadget<G: Group, F: Field>:
                 bit.borrow(),
                 &new_encoded,
                 &result,
-            )?;
+            )?
+            .into_owned();
             base.double_in_place(&mut cs.ns(|| format!("{}-th Doubling", i)))?;
         }
         Ok(result)
@@ -113,8 +114,10 @@ pub trait GroupGadget<G: Group, F: Field>:
                 bit.borrow(),
                 &new_encoded,
                 &self,
-            )?;
+            )?
+            .into_owned();
         }
+
         Ok(())
     }
 
@@ -141,7 +144,8 @@ pub trait GroupGadget<G: Group, F: Field>:
                 bit.borrow(),
                 &new_encoded_plus,
                 &new_encoded_minus,
-            )?;
+            )?
+            .into_owned();
         }
         Ok(())
     }

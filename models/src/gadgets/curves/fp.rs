@@ -38,7 +38,7 @@ use crate::{
 use snarkos_errors::gadgets::SynthesisError;
 use snarkos_utilities::{bititerator::BitIterator, bytes::ToBytes, to_bytes};
 
-use std::borrow::Borrow;
+use std::borrow::{Borrow, Cow};
 
 #[derive(Debug)]
 pub struct FpGadget<F: PrimeField> {
@@ -429,14 +429,18 @@ impl<F: PrimeField> ToBytesGadget<F> for FpGadget<F> {
 
 impl<F: PrimeField> CondSelectGadget<F> for FpGadget<F> {
     #[inline]
-    fn conditionally_select<CS: ConstraintSystem<F>>(
+    fn conditionally_select<'a, CS: ConstraintSystem<F>>(
         mut cs: CS,
         cond: &Boolean,
-        first: &Self,
-        second: &Self,
-    ) -> Result<Self, SynthesisError> {
+        first: &'a Self,
+        second: &'a Self,
+    ) -> Result<Cow<'a, Self>, SynthesisError> {
         if let Boolean::Constant(cond) = *cond {
-            if cond { Ok(first.clone()) } else { Ok(second.clone()) }
+            if cond {
+                Ok(Cow::Borrowed(first))
+            } else {
+                Ok(Cow::Borrowed(second))
+            }
         } else {
             let result = Self::alloc(cs.ns(|| ""), || {
                 cond.get_value()
@@ -456,7 +460,7 @@ impl<F: PrimeField> CondSelectGadget<F> for FpGadget<F> {
                 |lc| (&result.variable - &second.variable) + lc,
             );
 
-            Ok(result)
+            Ok(Cow::Owned(result))
         }
     }
 

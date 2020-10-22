@@ -37,7 +37,11 @@ use snarkos_models::{
 };
 use snarkos_utilities::bititerator::BitIterator;
 
-use std::{borrow::Borrow, marker::PhantomData, ops::Neg};
+use std::{
+    borrow::{Borrow, Cow},
+    marker::PhantomData,
+    ops::Neg,
+};
 
 #[derive(Derivative)]
 #[derivative(Debug, Clone)]
@@ -337,18 +341,22 @@ where
     FG: FieldGadget<P::BaseField, F>,
 {
     #[inline]
-    fn conditionally_select<CS: ConstraintSystem<F>>(
+    fn conditionally_select<'a, CS: ConstraintSystem<F>>(
         mut cs: CS,
         cond: &Boolean,
-        first: &Self,
-        second: &Self,
-    ) -> Result<Self, SynthesisError> {
+        first: &'a Self,
+        second: &'a Self,
+    ) -> Result<Cow<'a, Self>, SynthesisError> {
         let x = FG::conditionally_select(&mut cs.ns(|| "x"), cond, &first.x, &second.x)?;
         let y = FG::conditionally_select(&mut cs.ns(|| "y"), cond, &first.y, &second.y)?;
         let infinity =
             Boolean::conditionally_select(&mut cs.ns(|| "infinity"), cond, &first.infinity, &second.infinity)?;
 
-        Ok(Self::new(x, y, infinity))
+        Ok(Cow::Owned(Self::new(
+            x.into_owned(),
+            y.into_owned(),
+            infinity.into_owned(),
+        )))
     }
 
     fn cost() -> usize {

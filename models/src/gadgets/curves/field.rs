@@ -180,7 +180,8 @@ pub trait FieldGadget<NativeF: Field, F: Field>:
         for (i, bit) in bits.iter().enumerate() {
             res = res.square(cs.ns(|| format!("Double {}", i)))?;
             let tmp = res.mul(cs.ns(|| format!("Add {}-th base power", i)), self)?;
-            res = Self::conditionally_select(cs.ns(|| format!("Conditional Select {}", i)), bit, &tmp, &res)?;
+            res = Self::conditionally_select(cs.ns(|| format!("Conditional Select {}", i)), bit, &tmp, &res)?
+                .into_owned();
         }
         Ok(res)
     }

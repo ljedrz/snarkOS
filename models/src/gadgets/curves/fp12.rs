@@ -40,7 +40,10 @@ use crate::{
 use snarkos_errors::gadgets::SynthesisError;
 use snarkos_utilities::bititerator::BitIterator;
 
-use std::{borrow::Borrow, marker::PhantomData};
+use std::{
+    borrow::{Borrow, Cow},
+    marker::PhantomData,
+};
 
 type Fp2Gadget<P, F> = super::fp2::Fp2Gadget<<<P as Fp12Parameters>::Fp6Params as Fp6Parameters>::Fp2Params, F>;
 type Fp6Gadget<P, F> = super::fp6_3over2::Fp6Gadget<<P as Fp12Parameters>::Fp6Params, F>;
@@ -719,16 +722,18 @@ where
     <P::Fp6Params as Fp6Parameters>::Fp2Params: Fp2Parameters<Fp = F>,
 {
     #[inline]
-    fn conditionally_select<CS: ConstraintSystem<F>>(
+    fn conditionally_select<'a, CS: ConstraintSystem<F>>(
         mut cs: CS,
         cond: &Boolean,
-        first: &Self,
-        second: &Self,
-    ) -> Result<Self, SynthesisError> {
-        let c0 = Fp6Gadget::<P, F>::conditionally_select(&mut cs.ns(|| "c0"), cond, &first.c0, &second.c0)?;
-        let c1 = Fp6Gadget::<P, F>::conditionally_select(&mut cs.ns(|| "c1"), cond, &first.c1, &second.c1)?;
+        first: &'a Self,
+        second: &'a Self,
+    ) -> Result<Cow<'a, Self>, SynthesisError> {
+        let c0 =
+            Fp6Gadget::<P, F>::conditionally_select(&mut cs.ns(|| "c0"), cond, &first.c0, &second.c0)?.into_owned();
+        let c1 =
+            Fp6Gadget::<P, F>::conditionally_select(&mut cs.ns(|| "c1"), cond, &first.c1, &second.c1)?.into_owned();
 
-        Ok(Self::new(c0, c1))
+        Ok(Cow::Owned(Self::new(c0, c1)))
     }
 
     fn cost() -> usize {

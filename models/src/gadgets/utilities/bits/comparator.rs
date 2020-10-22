@@ -78,13 +78,13 @@ macro_rules! uint_cmp_impl {
                     let less_or_equal = Boolean::or(cs.ns(|| format!("less or equal [{}]", i)), &less, &equal)?;
 
                     // select the current result if it is the first bit difference
-                    result = Boolean::conditionally_select(cs.ns(|| format!("select bit [{}]", i)), &all_equal, &less_or_equal, &result)?;
+                    result = Boolean::conditionally_select(cs.ns(|| format!("select bit [{}]", i)), &all_equal, &less_or_equal, &result)?.into_owned();
 
                     // keep track of equal bits
                     all_equal = Boolean::and(cs.ns(|| format!("accumulate equal [{}]", i)), &all_equal, &equal)?;
                 }
 
-                result = Boolean::and(cs.ns(|| format!("false if all equal")), &result, &all_equal.not())?;
+                let result = Boolean::and(cs.ns(|| format!("false if all equal")), &result, &all_equal.not())?;
 
                 Ok(result)
             }

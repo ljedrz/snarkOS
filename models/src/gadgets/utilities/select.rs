@@ -20,17 +20,19 @@ use crate::{
 };
 use snarkos_errors::gadgets::SynthesisError;
 
+use std::borrow::Cow;
+
 /// If condition is `true`, return `first`; else, select `second`.
 pub trait CondSelectGadget<F: Field>
 where
-    Self: Sized,
+    Self: Sized + Clone,
 {
-    fn conditionally_select<CS: ConstraintSystem<F>>(
+    fn conditionally_select<'a, CS: ConstraintSystem<F>>(
         cs: CS,
         cond: &Boolean,
-        first: &Self,
-        second: &Self,
-    ) -> Result<Self, SynthesisError>;
+        first: &'a Self,
+        second: &'a Self,
+    ) -> Result<Cow<'a, Self>, SynthesisError>;
 
     fn cost() -> usize;
 }
