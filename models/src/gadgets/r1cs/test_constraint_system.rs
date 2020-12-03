@@ -21,7 +21,9 @@ use crate::{
 use snarkos_errors::gadgets::SynthesisError;
 
 use cfg_if::cfg_if;
-use fxhash::{FxBuildHasher, FxHashMap};
+use fxhash::FxBuildHasher;
+#[cfg(debug_assertions)]
+use fxhash::FxHashMap;
 use indexmap::{map::Entry, IndexMap, IndexSet};
 use itertools::Itertools;
 
@@ -146,6 +148,7 @@ impl CurrentNamespace {
 /// Constraint system for testing purposes.
 pub struct TestConstraintSystem<F: Field> {
     // used to intern full paths in test scenarios, for get and set purposes
+    #[cfg(debug_assertions)]
     interned_full_paths: FxHashMap<Vec<InternedPathSegment>, InternedPath>,
     // used to intern namespace segments
     interned_path_segments: IndexSet<String, FxBuildHasher>,
@@ -175,9 +178,9 @@ impl<F: Field> Default for TestConstraintSystem<F> {
             last_segment: interned_path_segment,
         };
 
-        let mut interned_full_paths = FxHashMap::default();
         cfg_if! {
             if #[cfg(debug_assertions)] {
+                let mut interned_full_paths = FxHashMap::default();
                 interned_full_paths.insert(vec![interned_path_segment], interned_path);
             }
         }
@@ -199,6 +202,7 @@ impl<F: Field> Default for TestConstraintSystem<F> {
         };
 
         TestConstraintSystem {
+            #[cfg(debug_assertions)]
             interned_full_paths,
             interned_fields,
             interned_path_segments,
@@ -217,6 +221,7 @@ impl<F: Field> TestConstraintSystem<F> {
     }
 
     #[inline]
+    #[cfg(debug_assertions)]
     fn intern_path(&self, path: &str) -> InternedPath {
         let mut vec = vec![];
 
@@ -303,6 +308,7 @@ impl<F: Field> TestConstraintSystem<F> {
         self.constraints.iter().count()
     }
 
+    #[cfg(debug_assertions)]
     pub fn set(&mut self, path: &str, to: F) {
         let interned_path = self.intern_path(path);
         let interned_field = self.interned_fields.insert_full(to).0;
@@ -320,6 +326,7 @@ impl<F: Field> TestConstraintSystem<F> {
         }
     }
 
+    #[cfg(debug_assertions)]
     pub fn get(&mut self, path: &str) -> F {
         let interned_path = self.intern_path(path);
 
