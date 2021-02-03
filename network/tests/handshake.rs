@@ -60,12 +60,12 @@ async fn handshake_responder_side() {
     // check if the peer has received the Verack message from the node
     let len = read_header(&mut peer_stream).await.unwrap().len();
     let payload = read_payload(&mut peer_stream, &mut peer_buf[..len]).await.unwrap();
-    assert!(matches!(bincode::deserialize(&payload).unwrap(), Payload::Verack(..)));
+    assert!(matches!(deserialize_payload(&payload).unwrap(), Payload::Verack(..)));
 
     // check if it was followed by a Version message
     let len = read_header(&mut peer_stream).await.unwrap().len();
     let payload = read_payload(&mut peer_stream, &mut peer_buf[..len]).await.unwrap();
-    let version = if let Payload::Version(version) = bincode::deserialize(&payload).unwrap() {
+    let version = if let Payload::Version(version) = deserialize_payload(&payload).unwrap() {
         version
     } else {
         unreachable!();
@@ -106,7 +106,7 @@ async fn handshake_initiator_side() {
     // the peer should receive a Version message from the node (initiator of the handshake)
     let len = read_header(&mut peer_stream).await.unwrap().len();
     let payload = read_payload(&mut peer_stream, &mut peer_buf[..len]).await.unwrap();
-    let version = if let Payload::Version(version) = bincode::deserialize(&payload).unwrap() {
+    let version = if let Payload::Version(version) = deserialize_payload(&payload).unwrap() {
         version
     } else {
         unreachable!();

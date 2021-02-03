@@ -18,8 +18,6 @@ use crate::external::Version;
 use snarkos_storage::BlockHeight;
 use snarkvm_objects::BlockHeaderHash;
 
-use serde::{Deserialize, Serialize};
-
 use std::{fmt, net::SocketAddr};
 
 pub const MAX_MESSAGE_SIZE: usize = 4 * 1024 * 1024; // 4 MiB
@@ -67,7 +65,7 @@ impl fmt::Display for Message {
 }
 
 /// The actual message transmitted over the network.
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum Payload {
     #[cfg_attr(nightly, doc(include = "../../../documentation/network_messages/block.md"))]
     Block(Vec<u8>),

@@ -53,7 +53,7 @@ impl ConnReader {
         let header = self.read_header().await?;
         self.reader.read_exact(&mut self.buffer[..header.len()]).await?;
         let payload =
-            bincode::deserialize(&self.buffer[..header.len()]).map_err(|e| ConnectError::MessageError(e.into()))?;
+            deserialize_payload(&self.buffer[..header.len()]).map_err(|e| ConnectError::Message(e.to_string()))?;
 
         debug!("Received a '{}' message from {}", payload, self.addr);
 

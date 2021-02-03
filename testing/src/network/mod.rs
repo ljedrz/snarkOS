@@ -197,12 +197,12 @@ pub async fn handshaken_node_and_peer(node_setup: TestSetup) -> (Server, TcpStre
     // check if the peer has received the Verack message from the node
     let len = read_header(&mut peer_stream).await.unwrap().len();
     let payload = read_payload(&mut peer_stream, &mut peer_buf[..len]).await.unwrap();
-    assert!(matches!(bincode::deserialize(&payload).unwrap(), Payload::Verack(_)));
+    assert!(matches!(deserialize_payload(&payload).unwrap(), Payload::Verack(_)));
 
     // check if it was followed by a Version message
     let len = read_header(&mut peer_stream).await.unwrap().len();
     let payload = read_payload(&mut peer_stream, &mut peer_buf[..len]).await.unwrap();
-    let version = if let Payload::Version(version) = bincode::deserialize(&payload).unwrap() {
+    let version = if let Payload::Version(version) = deserialize_payload(&payload).unwrap() {
         version
     } else {
         unreachable!();
@@ -237,7 +237,7 @@ pub async fn read_header<T: AsyncRead + Unpin>(stream: &mut T) -> Result<Message
 }
 
 pub async fn write_message_to_stream(payload: Payload, peer_stream: &mut TcpStream) {
-    let payload = bincode::serialize(&payload).unwrap();
+    let payload = serialize_payload(&payload).unwrap();
     let header = MessageHeader {
         len: payload.len() as u32,
     }
