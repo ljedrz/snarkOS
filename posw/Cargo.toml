@@ -12,25 +12,25 @@ license = "GPL-3.0"
 edition = "2018"
 
 [dependencies]
-snarkvm-algorithms = { version = "0.0.3" }
-snarkvm-curves = { version = "0.0.3" } # needed to instantiate with BLS12-377
-snarkvm-errors = { version = "0.0.3" }
-snarkvm-gadgets = { version = "0.0.3" }
-snarkvm-marlin = { version = "0.0.3" }
-snarkvm-models = { version = "0.0.3" }
-snarkvm-polycommit = { version = "0.0.3" }
-snarkvm-objects = { version = "0.0.3" } # needed to instantiate with BLS12-377
-snarkvm-parameters = { version = "0.0.3" }
-snarkvm-utilities = { version = "0.0.3" }
+snarkvm-algorithms = { git = "https://github.com/ljedrz/snarkVM", branch = "update_rand" }
+snarkvm-curves = { git = "https://github.com/ljedrz/snarkVM", branch = "update_rand" } # needed to instantiate with BLS12-377
+snarkvm-errors = { git = "https://github.com/ljedrz/snarkVM", branch = "update_rand" }
+snarkvm-gadgets = { git = "https://github.com/ljedrz/snarkVM", branch = "update_rand" }
+snarkvm-marlin = { git = "https://github.com/ljedrz/snarkVM", branch = "update_rand" }
+snarkvm-models = { git = "https://github.com/ljedrz/snarkVM", branch = "update_rand" }
+snarkvm-polycommit = { git = "https://github.com/ljedrz/snarkVM", branch = "update_rand" }
+snarkvm-objects = { git = "https://github.com/ljedrz/snarkVM", branch = "update_rand" } # needed to instantiate with BLS12-377
+snarkvm-parameters = { git = "https://github.com/ljedrz/snarkVM", branch = "update_rand" }
+snarkvm-utilities = { git = "https://github.com/ljedrz/snarkVM", branch = "update_rand" }
 
 snarkos-profiler = { path = "../profiler", version = "1.1.4"}
 
 blake2 = { version = "0.8.1" }
-rand = { version = "0.7" }
+rand = { version = "0.8" }
 thiserror = "1.0.22"
 
 [dev-dependencies]
-rand_xorshift = { version = "0.2" }
+rand_xorshift = { version = "0.3" }
 
 [features]
 print-trace = [ "snarkos-profiler/print-trace" ]

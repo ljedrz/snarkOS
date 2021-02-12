@@ -210,7 +210,7 @@ where
         let mut proof;
         let mut serialized_proof;
         loop {
-            nonce = rng.gen_range(0, max_nonce);
+            nonce = rng.gen_range(0..max_nonce);
             proof = Self::prove(&pk, nonce, subroots, rng)?;
 
             serialized_proof = to_bytes!(proof)?;
