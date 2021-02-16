@@ -12,16 +12,16 @@ license = "GPL-3.0"
 edition = "2018"
 
 [dependencies]
-snarkvm-algorithms = { version = "0.0.3" }
-snarkvm-curves = { version = "0.0.3" } # needed to instantiate with BLS12-377
-snarkvm-errors = { version = "0.0.3" }
-snarkvm-gadgets = { version = "0.0.3" }
-snarkvm-marlin = { version = "0.0.3" }
-snarkvm-models = { version = "0.0.3" }
-snarkvm-polycommit = { version = "0.0.3" }
-snarkvm-objects = { version = "0.0.3" } # needed to instantiate with BLS12-377
-snarkvm-parameters = { version = "0.0.3" }
-snarkvm-utilities = { version = "0.0.3" }
+snarkvm-algorithms = { path = "/home/ljedrz/git/snarkVM/algorithms" }
+snarkvm-curves = { path = "/home/ljedrz/git/snarkVM/curves" } # needed to instantiate with BLS12-377
+snarkvm-errors = { path = "/home/ljedrz/git/snarkVM/errors" }
+snarkvm-gadgets = { path = "/home/ljedrz/git/snarkVM/gadgets" }
+snarkvm-marlin = { path = "/home/ljedrz/git/snarkVM/marlin" }
+snarkvm-models = { path = "/home/ljedrz/git/snarkVM/models" }
+snarkvm-polycommit = { path = "/home/ljedrz/git/snarkVM/polycommit" }
+snarkvm-objects = { path = "/home/ljedrz/git/snarkVM/objects" } # needed to instantiate with BLS12-377
+snarkvm-parameters = { path = "/home/ljedrz/git/snarkVM/parameters" }
+snarkvm-utilities = { path = "/home/ljedrz/git/snarkVM/utilities" }
 
 snarkos-profiler = { path = "../profiler", version = "1.1.4"}
 

@@ -20,12 +20,12 @@ path = "benches/account.rs"
 harness = false
 
 [dependencies]
-snarkvm-algorithms = { version = "0.0.3", default-features = false }
-snarkvm-dpc = { version = "0.0.3", default-features = false }
-snarkvm-errors = { version = "0.0.3", default-features = false }
-snarkvm-models = { version = "0.0.3", default-features = false }
-snarkvm-objects = { version = "0.0.3", default-features = false }
-snarkvm-utilities = { version = "0.0.3", default-features = false }
+snarkvm-algorithms = { path = "/home/ljedrz/git/snarkVM/algorithms", default-features = false }
+snarkvm-dpc = { path = "/home/ljedrz/git/snarkVM/dpc", default-features = false }
+snarkvm-errors = { path = "/home/ljedrz/git/snarkVM/errors", default-features = false }
+snarkvm-models = { path = "/home/ljedrz/git/snarkVM/models", default-features = false }
+snarkvm-objects = { path = "/home/ljedrz/git/snarkVM/objects", default-features = false }
+snarkvm-utilities = { path = "/home/ljedrz/git/snarkVM/utilities", default-features = false }
 
 anyhow = { version = "1.0.37" }
 hex = { version = "0.4.2" }

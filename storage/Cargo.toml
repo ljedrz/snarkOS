@@ -12,12 +12,12 @@ license = "GPL-3.0"
 edition = "2018"
 
 [dependencies]
-snarkvm-algorithms = { version = "0.0.3"}
-snarkvm-objects = { version = "0.0.3" }
-snarkvm-errors = { version = "0.0.3" }
-snarkvm-models = { version = "0.0.3" }
-snarkvm-parameters = { version = "0.0.3" }
-snarkvm-utilities = { version = "0.0.3" }
+snarkvm-algorithms = { path = "/home/ljedrz/git/snarkVM/algorithms"}
+snarkvm-objects = { path = "/home/ljedrz/git/snarkVM/objects" }
+snarkvm-errors = { path = "/home/ljedrz/git/snarkVM/errors" }
+snarkvm-models = { path = "/home/ljedrz/git/snarkVM/models" }
+snarkvm-parameters = { path = "/home/ljedrz/git/snarkVM/parameters" }
+snarkvm-utilities = { path = "/home/ljedrz/git/snarkVM/utilities" }
 
 anyhow = { version = "1.0.37" }
 bincode = { version = "1.3.1" }
@@ -31,6 +31,6 @@ thiserror = { version = "1.0" }
 [dev-dependencies]
 snarkos-consensus = { path = "../consensus" }
 
-snarkvm-curves = { version = "0.0.3" }
+snarkvm-curves = { path = "/home/ljedrz/git/snarkVM/curves" }
 
 snarkos-testing = { path = "../testing" }
