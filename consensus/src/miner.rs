@@ -21,7 +21,7 @@ use snarkvm_dpc::base_dpc::{instantiated::*, parameters::PublicParameters, recor
 use snarkvm_models::{
     algorithms::{LoadableMerkleParameters, CRH},
     dpc::{DPCScheme, Record},
-    objects::Transaction,
+    objects::{Storage, Transaction},
 };
 use snarkvm_objects::{dpc::DPCTransactions, AccountAddress, Block, BlockHeader};
 use snarkvm_utilities::{bytes::ToBytes, to_bytes};
@@ -55,8 +55,8 @@ impl Miner {
     }
 
     /// Fetches new transactions from the memory pool.
-    pub async fn fetch_memory_pool_transactions<T: Transaction, P: LoadableMerkleParameters>(
-        storage: &RwLock<Ledger<T, P>>,
+    pub async fn fetch_memory_pool_transactions<T: Transaction, P: LoadableMerkleParameters, S: Storage>(
+        storage: &RwLock<Ledger<T, P, S>>,
         memory_pool: &Mutex<MemoryPool<T>>,
         max_size: usize,
     ) -> Result<DPCTransactions<T>, ConsensusError> {

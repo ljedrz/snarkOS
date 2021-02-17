@@ -15,11 +15,10 @@
 // along with the snarkOS library. If not, see <https://www.gnu.org/licenses/>.
 
 use snarkos_posw::error::PoswError;
-use snarkos_storage::error::StorageError;
 use snarkvm_errors::{
     algorithms::CRHError,
     dpc::DPCError,
-    objects::{BlockError, TransactionError},
+    objects::{BlockError, StorageError, TransactionError},
 };
 
 use std::fmt::Debug;

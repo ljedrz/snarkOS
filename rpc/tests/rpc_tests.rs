@@ -22,7 +22,6 @@ mod rpc_tests {
     use snarkos_testing::{
         consensus::*,
         network::{test_consensus, test_environment, ConsensusSetup, TestSetup},
-        storage::*,
     };
     use snarkvm_dpc::base_dpc::instantiated::Tx;
     use snarkvm_models::objects::Transaction;
@@ -36,14 +35,6 @@ mod rpc_tests {
     use parking_lot::RwLock;
     use serde_json::Value;
     use std::{net::SocketAddr, sync::Arc};
-
-    fn unwrap_arc_rwlock<T>(x: Arc<RwLock<T>>) -> T {
-        if let Ok(lock) = Arc::try_unwrap(x) {
-            lock.into_inner()
-        } else {
-            panic!("can't unwrap the Arc, there are strong refs left!");
-        }
-    }
 
     async fn initialize_test_rpc(storage: Arc<RwLock<MerkleTreeLedger>>) -> Rpc {
         let environment = test_environment(TestSetup::default());
@@ -154,7 +145,6 @@ mod rpc_tests {
         assert_eq!(genesis_block.header.nonce, block_response["nonce"]);
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -169,7 +159,6 @@ mod rpc_tests {
         assert_eq!(result.as_u64().unwrap(), 1u64);
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -187,7 +176,6 @@ mod rpc_tests {
         );
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -201,7 +189,6 @@ mod rpc_tests {
         ]);
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -220,7 +207,6 @@ mod rpc_tests {
         ]);
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -240,7 +226,6 @@ mod rpc_tests {
         verify_transaction_info(to_bytes![transaction].unwrap(), transaction_info);
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -255,7 +240,6 @@ mod rpc_tests {
         verify_transaction_info(TRANSACTION_1.to_vec(), transaction_info);
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -271,7 +255,6 @@ mod rpc_tests {
         );
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -285,7 +268,6 @@ mod rpc_tests {
         );
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -300,7 +282,6 @@ mod rpc_tests {
         assert_eq!(result.as_u64().unwrap(), 0u64);
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -319,7 +300,6 @@ mod rpc_tests {
         assert_eq!(peer_info.peers, expected_peers);
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -337,7 +317,6 @@ mod rpc_tests {
         assert_eq!(peer_info.is_syncing, false);
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -366,6 +345,5 @@ mod rpc_tests {
         }
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 }

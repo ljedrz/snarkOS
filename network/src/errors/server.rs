@@ -15,8 +15,7 @@
 // along with the snarkOS library. If not, see <https://www.gnu.org/licenses/>.
 
 use crate::errors::{message::MessageError, ConnectError, SendError};
-use snarkos_storage::error::StorageError;
-use snarkvm_errors::objects::{BlockError, TransactionError};
+use snarkvm_errors::objects::{BlockError, StorageError, TransactionError};
 
 #[derive(Debug, Error)]
 pub enum NodeError {

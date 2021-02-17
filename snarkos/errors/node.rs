@@ -17,8 +17,10 @@
 use crate::errors::CliError;
 use snarkos_consensus::error::ConsensusError;
 use snarkos_network::errors::NodeError as NetworkError;
-use snarkos_storage::error::StorageError;
-use snarkvm_errors::{algorithms::CRHError, objects::AccountError};
+use snarkvm_errors::{
+    algorithms::CRHError,
+    objects::{AccountError, StorageError},
+};
 
 #[derive(Debug, Error)]
 pub enum NodeError {

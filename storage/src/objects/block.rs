@@ -14,15 +14,18 @@
 // You should have received a copy of the GNU General Public License
 // along with the snarkOS library. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::{error::StorageError, *};
-use snarkvm_errors::objects::BlockError;
-use snarkvm_models::{algorithms::LoadableMerkleParameters, objects::Transaction};
+use crate::*;
+use snarkvm_errors::objects::{BlockError, StorageError};
+use snarkvm_models::{
+    algorithms::LoadableMerkleParameters,
+    objects::{Storage, StorageBatchOp, StorageOp, Transaction},
+};
 use snarkvm_objects::{Block, BlockHeaderHash, DPCTransactions};
-use snarkvm_utilities::{to_bytes, FromBytes, ToBytes};
+use snarkvm_utilities::{bytes_to_u32, to_bytes, FromBytes, ToBytes};
 
 use std::sync::atomic::Ordering;
 
-impl<T: Transaction, P: LoadableMerkleParameters> Ledger<T, P> {
+impl<T: Transaction, P: LoadableMerkleParameters, S: Storage> Ledger<T, P, S> {
     /// Get the latest block in the chain.
     pub fn get_latest_block(&self) -> Result<Block<T>, StorageError> {
         self.get_block_from_block_number(self.get_current_block_height())
@@ -105,17 +108,17 @@ impl<T: Transaction, P: LoadableMerkleParameters> Ledger<T, P> {
             return Err(StorageError::InvalidBlockRemovalCanon(block_hash.to_string()));
         }
 
-        let mut database_transaction = DatabaseTransaction::new();
+        let mut database_transaction = StorageBatchOp::new();
 
         // Remove block transactions
 
-        database_transaction.push(Op::Delete {
+        database_transaction.push(StorageOp::Delete {
             col: COL_BLOCK_TRANSACTIONS,
             key: block_hash.0.to_vec(),
         });
 
         for transaction in self.get_block_transactions(&block_hash)?.0 {
-            database_transaction.push(Op::Delete {
+            database_transaction.push(StorageOp::Delete {
                 col: COL_TRANSACTION_LOCATION,
                 key: transaction.transaction_id()?.to_vec(),
             });
@@ -133,7 +136,7 @@ impl<T: Transaction, P: LoadableMerkleParameters> Ledger<T, P> {
                 if child == &block_hash {
                     child_hashes.remove(index);
 
-                    database_transaction.push(Op::Insert {
+                    database_transaction.push(StorageOp::Insert {
                         col: COL_CHILD_HASHES,
                         key: block_header.previous_block_hash.0.to_vec(),
                         value: bincode::serialize(&child_hashes)?,
@@ -143,7 +146,7 @@ impl<T: Transaction, P: LoadableMerkleParameters> Ledger<T, P> {
             }
         }
 
-        self.storage.write(database_transaction)
+        self.storage.batch(database_transaction)
     }
 
     /// De-commit the latest block and return its header hash.
@@ -156,15 +159,15 @@ impl<T: Transaction, P: LoadableMerkleParameters> Ledger<T, P> {
         let update_best_block_num = current_block_height - 1;
         let block_hash: BlockHeaderHash = self.get_block_hash(current_block_height)?;
 
-        let mut database_transaction = DatabaseTransaction::new();
+        let mut database_transaction = StorageBatchOp::new();
 
-        database_transaction.push(Op::Insert {
+        database_transaction.push(StorageOp::Insert {
             col: COL_META,
             key: KEY_BEST_BLOCK_NUMBER.as_bytes().to_vec(),
             value: update_best_block_num.to_le_bytes().to_vec(),
         });
 
-        database_transaction.push(Op::Delete {
+        database_transaction.push(StorageOp::Delete {
             col: COL_DIGEST,
             key: self.current_digest()?,
         });
@@ -173,11 +176,11 @@ impl<T: Transaction, P: LoadableMerkleParameters> Ledger<T, P> {
         let mut cm_index = self.current_cm_index()?;
         let mut memo_index = self.current_memo_index()?;
 
-        let mut database_transaction = DatabaseTransaction::new();
+        let mut database_transaction = StorageBatchOp::new();
 
         for transaction in self.get_block_transactions(&block_hash)?.0 {
             for sn in transaction.old_serial_numbers() {
-                database_transaction.push(Op::Delete {
+                database_transaction.push(StorageOp::Delete {
                     col: COL_SERIAL_NUMBER,
                     key: to_bytes![sn]?.to_vec(),
                 });
@@ -185,14 +188,14 @@ impl<T: Transaction, P: LoadableMerkleParameters> Ledger<T, P> {
             }
 
             for cm in transaction.new_commitments() {
-                database_transaction.push(Op::Delete {
+                database_transaction.push(StorageOp::Delete {
                     col: COL_COMMITMENT,
                     key: to_bytes![cm]?.to_vec(),
                 });
                 cm_index -= 1;
             }
 
-            database_transaction.push(Op::Delete {
+            database_transaction.push(StorageOp::Delete {
                 col: COL_MEMO,
                 key: to_bytes![transaction.memorandum()]?.to_vec(),
             });
@@ -201,33 +204,33 @@ impl<T: Transaction, P: LoadableMerkleParameters> Ledger<T, P> {
 
         // Update the database state for current indexes
 
-        database_transaction.push(Op::Insert {
+        database_transaction.push(StorageOp::Insert {
             col: COL_META,
             key: KEY_CURR_SN_INDEX.as_bytes().to_vec(),
             value: (sn_index as u32).to_le_bytes().to_vec(),
         });
-        database_transaction.push(Op::Insert {
+        database_transaction.push(StorageOp::Insert {
             col: COL_META,
             key: KEY_CURR_CM_INDEX.as_bytes().to_vec(),
             value: (cm_index as u32).to_le_bytes().to_vec(),
         });
-        database_transaction.push(Op::Insert {
+        database_transaction.push(StorageOp::Insert {
             col: COL_META,
             key: KEY_CURR_MEMO_INDEX.as_bytes().to_vec(),
             value: (memo_index as u32).to_le_bytes().to_vec(),
         });
 
-        database_transaction.push(Op::Delete {
+        database_transaction.push(StorageOp::Delete {
             col: COL_BLOCK_LOCATOR,
             key: current_block_height.to_le_bytes().to_vec(),
         });
 
-        database_transaction.push(Op::Delete {
+        database_transaction.push(StorageOp::Delete {
             col: COL_BLOCK_LOCATOR,
             key: block_hash.0.to_vec(),
         });
 
-        self.storage.write(database_transaction)?;
+        self.storage.batch(database_transaction)?;
 
         self.current_block_height.fetch_sub(1, Ordering::SeqCst);
 
