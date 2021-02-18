@@ -20,17 +20,20 @@ extern crate tracing;
 use snarkos_consensus::{error::ConsensusError, ConsensusParameters, MemoryPool, MerkleTreeLedger, Miner};
 use snarkos_testing::{consensus::*, network::TestBlocks};
 use snarkvm_dpc::base_dpc::{instantiated::*, record::DPCRecord, record_payload::RecordPayload};
-use snarkvm_models::dpc::{DPCScheme, Program, Record};
+use snarkvm_models::{
+    dpc::{DPCScheme, Program, Record},
+    objects::Storage,
+};
 use snarkvm_objects::{dpc::DPCTransactions, Account, AccountAddress, Block};
 use tracing_subscriber::EnvFilter;
 
 use rand::Rng;
 use std::{fs::File, path::PathBuf, sync::Arc};
 
-fn mine_block(
+fn mine_block<S: Storage>(
     miner: &Miner,
-    ledger: &MerkleTreeLedger,
-    parameters: &<InstantiatedDPC as DPCScheme<MerkleTreeLedger>>::NetworkParameters,
+    ledger: &MerkleTreeLedger<S>,
+    parameters: &<InstantiatedDPC as DPCScheme<MerkleTreeLedger<S>>>::NetworkParameters,
     consensus: &ConsensusParameters,
     memory_pool: &mut MemoryPool<Tx>,
     txs: Vec<Tx>,
@@ -66,9 +69,9 @@ fn mine_block(
 /// Spends some value from inputs owned by the sender, to the receiver,
 /// and pays back whatever we are left with.
 #[allow(clippy::too_many_arguments)]
-fn send<R: Rng>(
-    ledger: &MerkleTreeLedger,
-    parameters: &<InstantiatedDPC as DPCScheme<MerkleTreeLedger>>::NetworkParameters,
+fn send<R: Rng, S: Storage>(
+    ledger: &MerkleTreeLedger<S>,
+    parameters: &<InstantiatedDPC as DPCScheme<MerkleTreeLedger<S>>>::NetworkParameters,
     consensus: &ConsensusParameters,
     from: &Account<Components>,
     inputs: Vec<DPCRecord<Components>>,

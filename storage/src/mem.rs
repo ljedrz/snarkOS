@@ -27,11 +27,8 @@ pub struct MemDb {
 }
 
 impl Storage for MemDb {
-    fn open(path: Option<&Path>, secondary_path: Option<&Path>) -> Result<Self, StorageError> {
-        assert!(
-            path.is_none() && secondary_path.is_none(),
-            "MemDb has no associated filesystem paths!"
-        );
+    fn open(_path: Option<&Path>, _secondary_path: Option<&Path>) -> Result<Self, StorageError> {
+        // the paths are just ignored
 
         Ok(Self {
             cols: RwLock::new(vec![Default::default(); NUM_COLS as usize]),
@@ -77,6 +74,11 @@ impl Storage for MemDb {
 
     fn exists(&self, col: u32, key: &[u8]) -> bool {
         self.cols.read()[col as usize].contains_key(key)
+    }
+
+    fn try_catch_up_with_primary(&self) -> Result<(), StorageError> {
+        // used only in Ledger::catch_up_secondary, doesn't cause an early return
+        Err(StorageError::Message("MemDb has no secondary instance".into()))
     }
 
     fn destroy(&self) -> Result<(), StorageError> {

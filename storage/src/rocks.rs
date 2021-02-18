@@ -32,6 +32,10 @@ pub struct RocksDb {
 }
 
 impl Storage for RocksDb {
+    fn in_memory(&self) -> bool {
+        false
+    }
+
     fn open(path: Option<&Path>, secondary_path: Option<&Path>) -> Result<Self, StorageError> {
         assert!(path.is_some(), "RocksDB must have an associated filesystem path!");
         let primary_path = path.unwrap();
@@ -89,6 +93,12 @@ impl Storage for RocksDb {
             Ok(val) => val.is_some(),
             Err(_) => false,
         }
+    }
+
+    fn try_catch_up_with_primary(&self) -> Result<(), StorageError> {
+        self.db
+            .try_catch_up_with_primary()
+            .map_err(|e| StorageError::Message(format!("Can't catch up with primary storage: {}", e)))
     }
 
     fn destroy(&self) -> Result<(), StorageError> {

@@ -35,6 +35,7 @@ use snarkos_network::{
     Node,
     MAX_MESSAGE_SIZE,
 };
+use snarkos_storage::LedgerStorage;
 
 use parking_lot::{Mutex, RwLock};
 use std::{net::SocketAddr, sync::Arc, time::Duration};
@@ -143,7 +144,7 @@ impl Default for TestSetup {
     }
 }
 
-pub fn test_consensus(setup: ConsensusSetup, node: Node) -> Consensus {
+pub fn test_consensus(setup: ConsensusSetup, node: Node<LedgerStorage>) -> Consensus<LedgerStorage> {
     Consensus::new(
         node,
         Arc::new(RwLock::new(FIXTURE_VK.ledger())),
@@ -170,7 +171,7 @@ pub fn test_environment(setup: TestSetup) -> Environment {
 }
 
 /// Starts a node with the specified bootnodes.
-pub async fn test_node(setup: TestSetup) -> Node {
+pub async fn test_node(setup: TestSetup) -> Node<LedgerStorage> {
     let is_miner = setup.consensus_setup.as_ref().map(|c| c.is_miner) == Some(true);
     let environment = test_environment(setup.clone());
     let mut node = Node::new(environment).await.unwrap();
@@ -302,7 +303,7 @@ pub async fn spawn_2_fake_nodes() -> (FakeNode, FakeNode) {
     (node0, node1)
 }
 
-pub async fn handshaken_node_and_peer(node_setup: TestSetup) -> (Node, FakeNode) {
+pub async fn handshaken_node_and_peer(node_setup: TestSetup) -> (Node<LedgerStorage>, FakeNode) {
     // start a test node and listen for incoming connections
     let node = test_node(node_setup).await;
     let node_listener = node.local_address().unwrap();

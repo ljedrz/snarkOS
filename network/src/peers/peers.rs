@@ -16,6 +16,8 @@
 
 use crate::{message::*, ConnReader, ConnWriter, NetworkError, Node, Version};
 
+use snarkvm_models::objects::Storage;
+
 use std::{net::SocketAddr, sync::Arc};
 
 use parking_lot::Mutex;
@@ -24,7 +26,7 @@ use tokio::{
     net::TcpStream,
 };
 
-impl Node {
+impl<S: Storage + Send + Sync + 'static> Node<S> {
     ///
     /// Broadcasts updates with connected peers and maintains a permitted number of connected peers.
     ///

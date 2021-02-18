@@ -54,7 +54,7 @@ pub use miner::Miner;
 pub mod memory_pool;
 pub use memory_pool::MemoryPool;
 
-use snarkos_storage::{Ledger, RocksDb};
+use snarkos_storage::Ledger;
 use snarkvm_dpc::base_dpc::instantiated::{CommitmentMerkleParameters, Tx};
 
-pub type MerkleTreeLedger = Ledger<Tx, CommitmentMerkleParameters, RocksDb>;
+pub type MerkleTreeLedger<S> = Ledger<Tx, CommitmentMerkleParameters, S>;

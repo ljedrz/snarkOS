@@ -20,11 +20,15 @@ pub use ledger::*;
 pub mod key_value;
 pub use key_value::*;
 
-pub mod mem;
-pub use mem::*;
+#[cfg(feature = "mem_storage")]
+mod mem;
+#[cfg(feature = "mem_storage")]
+pub use mem::MemDb as LedgerStorage;
 
 pub mod objects;
 pub use objects::*;
 
-pub mod rocks;
-pub use rocks::*;
+#[cfg(feature = "rocksdb_storage")]
+mod rocks;
+#[cfg(feature = "rocksdb_storage")]
+pub use rocks::RocksDb as LedgerStorage;

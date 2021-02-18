@@ -28,8 +28,12 @@ use snarkos_consensus::{ConsensusParameters, MemoryPool, MerkleTreeLedger};
 use snarkos_network::{environment::Environment, Consensus, Node};
 use snarkos_posw::PoswMarlin;
 use snarkos_rpc::start_rpc_server;
+use snarkos_storage::LedgerStorage;
 use snarkvm_dpc::base_dpc::{instantiated::Components, parameters::PublicParameters, BaseDPCComponents};
-use snarkvm_models::algorithms::{CRH, SNARK};
+use snarkvm_models::{
+    algorithms::{CRH, SNARK},
+    objects::Storage,
+};
 use snarkvm_objects::{AccountAddress, Network};
 use snarkvm_utilities::{to_bytes, ToBytes};
 
@@ -88,8 +92,10 @@ async fn start_server(config: Config) -> anyhow::Result<()> {
 
     let mut path = config.node.dir;
     path.push(&config.node.db);
-    let storage = MerkleTreeLedger::open_at_path(path.clone())?;
+    let storage = MerkleTreeLedger::<LedgerStorage>::open_at_path(path.clone())?;
     // let storage = Arc::new(MerkleTreeLedger::open_at_path(path.clone())?);
+
+    let is_storage_in_memory = storage.storage.in_memory();
 
     let memory_pool = Arc::new(Mutex::new(MemoryPool::from_storage(&storage)?));
 
@@ -163,15 +169,14 @@ async fn start_server(config: Config) -> anyhow::Result<()> {
     }
 
     // Start RPC thread, if the RPC configuration is enabled.
-    if config.rpc.json_rpc {
+    if config.rpc.json_rpc && !is_storage_in_memory {
         // Open a secondary storage instance to prevent resource sharing and bottle-necking.
-        let secondary_storage = Arc::new(RwLock::new(MerkleTreeLedger::open_secondary_at_path(path.clone())?));
+        let secondary_storage = MerkleTreeLedger::open_secondary_at_path(path.clone())?;
 
         start_rpc_server(
             config.rpc.port,
             secondary_storage,
-            path.to_path_buf(),
-            environment,
+            Some(path.to_path_buf()),
             node.clone(),
             config.rpc.username,
             config.rpc.password,
