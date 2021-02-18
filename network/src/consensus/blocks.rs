@@ -16,11 +16,12 @@
 
 use crate::{message::*, peers::PeerInfo, Consensus, NetworkError};
 use snarkos_consensus::error::ConsensusError;
+use snarkvm_models::objects::Storage;
 use snarkvm_objects::{Block, BlockHeaderHash};
 
 use std::{collections::HashMap, net::SocketAddr};
 
-impl Consensus {
+impl<S: Storage> Consensus<S> {
     ///
     /// Broadcasts updates with connected peers and maintains a permitted number of connected peers.
     ///

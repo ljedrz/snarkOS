@@ -20,6 +20,7 @@ use snarkos_testing::{
     wait_until,
 };
 
+use snarkvm_models::objects::Storage;
 use snarkvm_objects::block_header_hash::BlockHeaderHash;
 
 use std::time::Duration;
@@ -146,7 +147,7 @@ async fn handshake_initiator_side() {
     assert_eq!(peer_book.number_of_connected_peers(), 1);
 }
 
-async fn assert_node_rejected_message(node: &Node, peer_stream: &mut TcpStream) {
+async fn assert_node_rejected_message<S: Storage>(node: &Node<S>, peer_stream: &mut TcpStream) {
     // read the response from the stream
     let mut buffer = String::new();
     let bytes_read = peer_stream.read_to_string(&mut buffer).await.unwrap();

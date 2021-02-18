@@ -45,8 +45,6 @@ pub struct Ledger<T: Transaction, P: LoadableMerkleParameters, S: Storage> {
     pub _transaction: PhantomData<T>,
 }
 
-pub type RocksDbLedger<T, P> = Ledger<T, P, RocksDb>;
-
 impl<T: Transaction, P: LoadableMerkleParameters, S: Storage> Ledger<T, P, S> {
     /// Open the blockchain storage at a particular path.
     pub fn open_at_path<PATH: AsRef<Path>>(path: PATH) -> Result<Self, StorageError> {
@@ -160,13 +158,11 @@ impl<T: Transaction, P: LoadableMerkleParameters, S: Storage> Ledger<T, P, S> {
             }
         }
     }
-}
 
-impl<T: Transaction, P: LoadableMerkleParameters> RocksDbLedger<T, P> {
     /// Attempt to catch the secondary read-only storage instance with the primary instance.
     pub fn catch_up_secondary(&self, update_merkle_tree: bool) -> Result<(), StorageError> {
         // Sync the secondary and primary instances
-        if self.storage.db.try_catch_up_with_primary().is_ok() {
+        if self.storage.try_catch_up_with_primary().is_ok() {
             let current_block_height_bytes = self
                 .storage
                 .get(COL_META, &KEY_BEST_BLOCK_NUMBER.as_bytes().to_vec())?

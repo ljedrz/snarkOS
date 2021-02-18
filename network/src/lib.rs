@@ -23,6 +23,10 @@
 #![cfg_attr(nightly, doc(include = "../documentation/concepts/network_server.md"))]
 
 #[macro_use]
+extern crate derivative;
+#[macro_use]
+extern crate thiserror;
+#[macro_use]
 extern crate tracing;
 #[macro_use]
 extern crate snarkos_metrics;
@@ -50,6 +54,8 @@ pub use peers::*;
 
 use crate::ConnWriter;
 
+use snarkvm_models::objects::Storage;
+
 use parking_lot::RwLock;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::{task, time::sleep};
@@ -68,8 +74,9 @@ pub(crate) type Receiver = tokio::sync::mpsc::Receiver<Message>;
 
 /// A core data structure for operating the networking stack of this node.
 // TODO: remove inner Arcs once the Node itself is passed around in an Arc or contains an inner object wrapped in an Arc (causing all the Node's contents that are not to be "cloned around" to be Arced too).
-#[derive(Clone)]
-pub struct Node {
+#[derive(Derivative)]
+#[derivative(Clone(bound = ""))]
+pub struct Node<S: Storage> {
     /// The parameters and settings of this node.
     pub environment: Environment,
     /// The inbound handler of this node.
@@ -79,10 +86,10 @@ pub struct Node {
     /// The list of connected and disconnected peers of this node.
     pub peer_book: Arc<RwLock<PeerBook>>,
     /// The objects related to consensus.
-    pub consensus: Option<Arc<Consensus>>,
+    pub consensus: Option<Arc<Consensus<S>>>,
 }
 
-impl Node {
+impl<S: Storage + Send + Sync + 'static> Node<S> {
     /// Creates a new instance of `Node`.
     pub async fn new(environment: Environment) -> Result<Self, NetworkError> {
         let channels: Arc<RwLock<HashMap<SocketAddr, Arc<ConnWriter>>>> = Default::default();
@@ -99,13 +106,13 @@ impl Node {
         })
     }
 
-    pub fn set_consensus(&mut self, consensus: Consensus) {
+    pub fn set_consensus(&mut self, consensus: Consensus<S>) {
         self.consensus = Some(Arc::new(consensus));
     }
 
     /// Returns a reference to the consensus objects.
     #[inline]
-    pub fn consensus(&self) -> &Consensus {
+    pub fn consensus(&self) -> &Consensus<S> {
         self.consensus.as_ref().expect("no consensus!")
     }
 
