@@ -29,12 +29,12 @@ snarkvm-utilities = { path = "/home/ljedrz/git/snarkVM/utilities", default-featu
 
 anyhow = { version = "1.0.37" }
 hex = { version = "0.4.2" }
-rand = { version = "0.7", default-features = false, features = ["wasm-bindgen"] }
+rand = { version = "0.8" }
 thiserror = { version = "1.0" }
 wasm-bindgen = { version = "0.2.68" }
 
 [dev-dependencies]
 criterion = { version = "0.3.1" }
 hex = { version = "0.4.2" }
-rand_chacha = { version = "0.2", default-features = false }
+rand_chacha = { version = "0.3", default-features = false }
 wasm-bindgen-test = { version = "0.3.18" }

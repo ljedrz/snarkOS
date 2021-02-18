@@ -210,7 +210,7 @@ where
         let mut proof;
         let mut serialized_proof;
         loop {
-            nonce = rng.gen_range(0, max_nonce);
+            nonce = rng.gen_range(0..max_nonce);
             proof = Self::prove(&pk, nonce, subroots, rng)?;
 
             serialized_proof = to_bytes!(proof)?;
@@ -269,7 +269,7 @@ where
 /// Commits to the nonce and pedersen merkle root
 pub fn commit(nonce: u32, root: &PedersenMerkleRootHash) -> Vec<u8> {
     let mut h = Blake2s::new();
-    h.input(&nonce.to_le_bytes());
-    h.input(root.0.as_ref());
-    h.result().to_vec()
+    h.update(&nonce.to_le_bytes());
+    h.update(root.0.as_ref());
+    h.finalize().to_vec()
 }
