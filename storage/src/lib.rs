@@ -20,6 +20,9 @@ pub use ledger::*;
 pub mod key_value;
 pub use key_value::*;
 
+pub mod mem;
+pub use mem::*;
+
 pub mod objects;
 pub use objects::*;
 
