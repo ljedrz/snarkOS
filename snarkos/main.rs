@@ -176,7 +176,6 @@ async fn start_server(config: Config) -> anyhow::Result<()> {
         start_rpc_server(
             config.rpc.port,
             secondary_storage,
-            Some(path.to_path_buf()),
             node.clone(),
             config.rpc.username,
             config.rpc.password,

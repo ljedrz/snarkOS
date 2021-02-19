@@ -36,7 +36,6 @@ use rand_xorshift::XorShiftRng;
 pub static FIXTURE: Lazy<Fixture<LedgerStorage>> = Lazy::new(|| setup(false));
 pub static FIXTURE_VK: Lazy<Fixture<LedgerStorage>> = Lazy::new(|| setup(true));
 
-
 // helper for setting up e2e tests
 pub struct Fixture<S: Storage> {
     pub parameters: <InstantiatedDPC as DPCScheme<MerkleTreeLedger<S>>>::NetworkParameters,

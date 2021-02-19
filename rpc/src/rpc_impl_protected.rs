@@ -394,16 +394,6 @@ impl<S: Storage + Send + Sync + 'static> ProtectedRpcFunctions for RpcImpl<S> {
             memo = rng.gen();
         }
 
-        // Because this is a computationally heavy endpoint, we open a
-        // new secondary storage instance to prevent storage bottle-necking.
-        cfg_if::cfg_if! {
-            if #[cfg(debug_assertions)] {
-                let storage = &self.storage;
-            } else {
-                let storage = self.new_secondary_storage_instance()?;
-            }
-        }
-
         // Generate transaction
         let (records, transaction) = self.consensus().create_transaction(
             &self.parameters(),
@@ -416,7 +406,7 @@ impl<S: Storage + Send + Sync + 'static> ProtectedRpcFunctions for RpcImpl<S> {
             new_values,
             new_payloads,
             memo,
-            &storage,
+            &self.storage,
             rng,
         )?;
 
@@ -501,23 +491,13 @@ impl<S: Storage + Send + Sync + 'static> ProtectedRpcFunctions for RpcImpl<S> {
         let (old_death_program_proofs, new_birth_program_proofs) =
             ConsensusParameters::generate_program_proofs::<_, S>(&self.parameters(), &transaction_kernel, rng)?;
 
-        // Because this is a computationally heavy endpoint, we open a
-        // new secondary storage instance to prevent storage bottle-necking.
-        cfg_if::cfg_if! {
-            if #[cfg(debug_assertions)] {
-                let storage = &self.storage;
-            } else {
-                let storage = self.new_secondary_storage_instance()?;
-            }
-        }
-
         // Online execution to generate a DPC transaction
         let (records, transaction) = InstantiatedDPC::execute_online(
             &self.parameters(),
             transaction_kernel,
             old_death_program_proofs,
             new_birth_program_proofs,
-            &storage,
+            &self.storage,
             rng,
         )?;
 

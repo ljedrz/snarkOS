@@ -25,7 +25,6 @@ use snarkvm_dpc::base_dpc::{
     instantiated::{Components, Tx},
     parameters::PublicParameters,
 };
-use snarkvm_errors::objects::StorageError;
 use snarkvm_models::objects::{Storage, Transaction};
 use snarkvm_objects::BlockHeaderHash;
 use snarkvm_utilities::{
@@ -37,7 +36,7 @@ use snarkvm_utilities::{
 use chrono::Utc;
 use parking_lot::Mutex;
 
-use std::{ops::Deref, path::PathBuf, sync::Arc};
+use std::{ops::Deref, sync::Arc};
 
 /// Implements JSON-RPC HTTP endpoint functions for a node.
 /// The constructor is given Arc::clone() copies of all needed node components.
@@ -57,9 +56,6 @@ pub struct RpcInner<S: Storage> {
     /// Blockchain database storage.
     pub(crate) storage: MerkleTreeLedger<S>,
 
-    /// The path to the Blockchain database storage.
-    pub(crate) storage_path: Option<PathBuf>,
-
     /// RPC credentials for accessing guarded endpoints
     pub(crate) credentials: Option<RpcCredentials>,
 
@@ -70,29 +66,12 @@ pub struct RpcInner<S: Storage> {
 impl<S: Storage + Send + Sync + 'static> RpcImpl<S> {
     /// Creates a new struct for calling public and private RPC endpoints.
     #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        storage: MerkleTreeLedger<S>,
-        storage_path: Option<PathBuf>,
-        credentials: Option<RpcCredentials>,
-        node: Node<S>,
-    ) -> Self {
+    pub fn new(storage: MerkleTreeLedger<S>, credentials: Option<RpcCredentials>, node: Node<S>) -> Self {
         Self(Arc::new(RpcInner {
             storage,
-            storage_path,
             credentials,
             node,
         }))
-    }
-
-    /// Open a new secondary storage instance.
-    pub fn new_secondary_storage_instance(&self) -> Result<MerkleTreeLedger<S>, RpcError> {
-        if let Some(ref path) = self.storage_path {
-            Ok(MerkleTreeLedger::open_secondary_at_path(path)?)
-        } else {
-            Err(RpcError::StorageError(StorageError::Message(
-                "Filesystem storage was not enabled".into(),
-            )))
-        }
     }
 
     pub fn consensus(&self) -> &ConsensusParameters {

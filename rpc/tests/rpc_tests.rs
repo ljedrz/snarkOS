@@ -42,7 +42,7 @@ mod rpc_tests {
         let consensus = test_consensus(ConsensusSetup::default(), node.clone());
         node.set_consensus(consensus);
 
-        Rpc::new(RpcImpl::new(storage, None, None, node).to_delegate())
+        Rpc::new(RpcImpl::new(storage, None, node).to_delegate())
     }
 
     fn verify_transaction_info(transaction_bytes: Vec<u8>, transaction_info: Value) {
