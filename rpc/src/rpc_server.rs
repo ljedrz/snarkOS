@@ -27,7 +27,7 @@ use snarkvm_models::objects::Storage;
 
 use jsonrpc_http_server::{cors::AccessControlAllowHeaders, hyper, ServerBuilder};
 
-use std::{net::SocketAddr, path::PathBuf};
+use std::net::SocketAddr;
 
 /// Starts a local JSON-RPC HTTP server at rpc_port in a new thread.
 /// Rpc failures will error on the thread level but not affect the main network server.
@@ -36,7 +36,6 @@ use std::{net::SocketAddr, path::PathBuf};
 pub async fn start_rpc_server<S: Storage + Send + Sync + 'static>(
     rpc_port: u16,
     secondary_storage: MerkleTreeLedger<S>,
-    storage_path: Option<PathBuf>,
     node_server: Node<S>,
     username: Option<String>,
     password: Option<String>,
@@ -48,7 +47,7 @@ pub async fn start_rpc_server<S: Storage + Send + Sync + 'static>(
         _ => None,
     };
 
-    let rpc_impl = RpcImpl::new(secondary_storage, storage_path, credentials, node_server);
+    let rpc_impl = RpcImpl::new(secondary_storage, credentials, node_server);
     let mut io = jsonrpc_core::MetaIoHandler::default();
 
     rpc_impl.add_protected(&mut io);
