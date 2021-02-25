@@ -25,8 +25,6 @@
 #[macro_use]
 extern crate derivative;
 #[macro_use]
-extern crate thiserror;
-#[macro_use]
 extern crate tracing;
 #[macro_use]
 extern crate snarkos_metrics;

@@ -36,7 +36,7 @@ pub struct Consensus<S: Storage> {
     /// The node this consensus is bound to.
     node: Node<S>,
     /// The storage system of this node.
-    storage: Arc<MerkleTreeLedger>,
+    storage: Arc<MerkleTreeLedger<S>>,
     /// The memory pool of this node.
     memory_pool: Arc<Mutex<MemoryPool<Tx>>>,
     /// The consensus parameters for the associated network ID.

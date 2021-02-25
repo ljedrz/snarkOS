@@ -39,7 +39,7 @@ use snarkvm_utilities::{to_bytes, ToBytes};
 
 use std::{net::SocketAddr, str::FromStr, sync::Arc, time::Duration};
 
-use parking_lot::{Mutex, RwLock};
+use parking_lot::Mutex;
 use tokio::runtime::Builder;
 use tracing_futures::Instrument;
 use tracing_subscriber::EnvFilter;
@@ -92,7 +92,7 @@ async fn start_server(config: Config) -> anyhow::Result<()> {
 
     let mut path = config.node.dir;
     path.push(&config.node.db);
-    let storage = Arc::new(MerkleTreeLedger::open_at_path(path.clone())?);
+    let storage = Arc::new(MerkleTreeLedger::<LedgerStorage>::open_at_path(path.clone())?);
 
     let is_storage_in_memory = storage.storage.in_memory();
 

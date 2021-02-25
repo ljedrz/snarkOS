@@ -15,7 +15,6 @@
 // along with the snarkOS library. If not, see <https://www.gnu.org/licenses/>.
 
 use snarkos_consensus::error::ConsensusError;
-use snarkos_storage::error::StorageError;
 use snarkvm_errors::{
     algorithms::CRHError,
     dpc::DPCError,

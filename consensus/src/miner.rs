@@ -55,8 +55,8 @@ impl Miner {
     }
 
     /// Fetches new transactions from the memory pool.
-    pub async fn fetch_memory_pool_transactions<T: Transaction, P: LoadableMerkleParameters>(
-        storage: &Ledger<T, P>,
+    pub async fn fetch_memory_pool_transactions<T: Transaction, P: LoadableMerkleParameters, S: Storage>(
+        storage: &Ledger<T, P, S>,
         memory_pool: &Mutex<MemoryPool<T>>,
         max_size: usize,
     ) -> Result<DPCTransactions<T>, ConsensusError> {
@@ -166,7 +166,7 @@ impl Miner {
     pub async fn mine_block<S: Storage>(
         &self,
         parameters: &PublicParameters<Components>,
-        storage: &Arc<MerkleTreeLedger>,
+        storage: &Arc<MerkleTreeLedger<S>>,
         memory_pool: &Arc<Mutex<MemoryPool<Tx>>>,
     ) -> Result<(Block<Tx>, Vec<DPCRecord<Components>>), ConsensusError> {
         let candidate_transactions =
