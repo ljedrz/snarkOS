@@ -16,15 +16,15 @@ default = ["network"]
 network = ["snarkos-network", "snow", "tokio", "tracing", "tracing-futures", "tracing-subscriber"]
 
 [dependencies]
-snarkvm-algorithms = { version = "0.0.5" }
-snarkvm-curves = { version = "0.0.5" }
-snarkvm-dpc = { version = "0.0.5" }
-snarkvm-errors = { version = "0.0.5" }
-snarkvm-models = { version = "0.0.5" }
-snarkvm-objects = { version = "0.0.5" }
-snarkvm-parameters = { version = "0.0.5" }
-snarkvm-posw = { version = "0.0.5" }
-snarkvm-utilities = { version = "0.0.5" }
+snarkvm-algorithms = { version = "0.0.6" }
+snarkvm-curves = { version = "0.0.6" }
+snarkvm-dpc = { version = "0.0.6" }
+snarkvm-errors = { version = "0.0.6" }
+snarkvm-models = { version = "0.0.6" }
+snarkvm-objects = { version = "0.0.6" }
+snarkvm-parameters = { version = "0.0.6" }
+snarkvm-posw = { version = "0.0.6" }
+snarkvm-utilities = { version = "0.0.6" }
 
 snarkos-consensus = { path = "../consensus", version = "1.1.4" }
 snarkos-network = { path = "../network", version = "1.1.4", optional = true }

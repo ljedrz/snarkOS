@@ -27,11 +27,11 @@ path = "posw/posw.rs"
 harness = false
 
 [dependencies]
-snarkvm-curves = { version = "0.0.5" }
-snarkvm-marlin = { version = "0.0.5" }
-snarkvm-models = { version = "0.0.5" }
-snarkvm-posw = { version = "0.0.5", features = ["test-helpers"] }
-snarkvm-utilities = { version = "0.0.5" }
+snarkvm-curves = { version = "0.0.6" }
+snarkvm-marlin = { version = "0.0.6" }
+snarkvm-models = { version = "0.0.6" }
+snarkvm-posw = { version = "0.0.6", features = ["test-helpers"] }
+snarkvm-utilities = { version = "0.0.6" }
 
 snarkos-profiler = { path = "../profiler", version = "1.1.4" }
 snarkos-network = { path = "../network" }
