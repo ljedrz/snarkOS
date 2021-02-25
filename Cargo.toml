@@ -43,7 +43,7 @@ snarkvm-utilities = { version = "0.0.5" }
 snarkos-consensus = { path = "./consensus", version = "1.1.4" }
 snarkos-network = { path = "./network", version = "1.1.4" }
 snarkos-rpc = { path = "./rpc", version = "1.1.4" }
-snarkos-storage = { path = "./storage", version = "1.1.4" }
+snarkos-storage = { path = "./storage", version = "1.1.4", features = ["rocksdb_storage"] }
 
 anyhow = { version = "1.0" }
 clap = { version = "2.33.3" }

@@ -27,6 +27,10 @@ pub struct MemDb {
 }
 
 impl Storage for MemDb {
+    fn in_memory(&self) -> bool {
+        true
+    }
+
     fn open(_path: Option<&Path>, _secondary_path: Option<&Path>) -> Result<Self, StorageError> {
         // the paths are just ignored
 

@@ -20,8 +20,7 @@ pub use ledger::*;
 pub mod key_value;
 pub use key_value::*;
 
-#[cfg(feature = "mem_storage")]
-mod mem;
+pub mod mem;
 #[cfg(feature = "mem_storage")]
 pub use mem::MemDb as LedgerStorage;
 
