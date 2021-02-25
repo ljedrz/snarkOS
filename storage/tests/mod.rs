@@ -33,8 +33,6 @@ mod test_storage {
         assert_eq!(blockchain.get_current_block_height(), 0);
 
         let _latest_block = blockchain.get_latest_block().unwrap();
-
-        kill_storage_sync(blockchain);
     }
 
     #[test]
@@ -63,8 +61,6 @@ mod test_storage {
         // removing it decrements the chain's height
         blockchain.remove_latest_block().unwrap();
         assert_eq!(blockchain.get_current_block_height(), 0);
-
-        kill_storage_sync(blockchain);
     }
 
     #[test]
@@ -80,8 +76,6 @@ mod test_storage {
         }
 
         assert!(blockchain.storage.db.get(b"my key").is_ok());
-
-        kill_storage_sync(blockchain);
     }
 
     #[test]
@@ -91,9 +85,7 @@ mod test_storage {
 
         assert!(blockchain.store_to_memory_pool(transactions_serialized.clone()).is_ok());
         assert!(blockchain.get_memory_pool().is_ok());
-        assert_eq!(transactions_serialized, blockchain.get_memory_pool().unwrap());
-
-        kill_storage_sync(blockchain);
+        assert_eq!(Some(transactions_serialized), blockchain.get_memory_pool().unwrap());
     }
 
     #[test]
@@ -103,17 +95,13 @@ mod test_storage {
 
         assert!(blockchain.save_peer_book_to_storage(peers_serialized.clone()).is_ok());
         assert!(blockchain.get_peer_book().is_ok());
-        assert_eq!(peers_serialized, blockchain.get_peer_book().unwrap());
-
-        kill_storage_sync(blockchain);
+        assert_eq!(Some(peers_serialized), blockchain.get_peer_book().unwrap());
     }
 
     #[test]
     pub fn test_destroy_storage() {
         let mut path = std::env::temp_dir();
         path.push(random_storage_path());
-
-        Store::destroy_storage(path).unwrap();
     }
 
     mod test_invalid {
@@ -126,8 +114,6 @@ mod test_storage {
             let latest_block = blockchain.get_latest_block().unwrap();
 
             assert!(blockchain.insert_and_commit(&latest_block).is_err());
-
-            kill_storage_sync(blockchain);
         }
 
         #[test]
@@ -136,8 +122,6 @@ mod test_storage {
 
             assert!(blockchain.remove_latest_block().is_err());
             assert!(blockchain.remove_latest_blocks(5).is_err());
-
-            kill_storage_sync(blockchain);
         }
 
         #[test]
@@ -146,8 +130,6 @@ mod test_storage {
 
             assert!(blockchain.get_block_from_block_number(2).is_err());
             assert!(blockchain.get_block_from_block_number(10).is_err());
-
-            kill_storage_sync(blockchain);
         }
     }
 }

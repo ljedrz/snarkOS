@@ -18,7 +18,7 @@ use snarkos_storage::error::StorageError;
 use snarkvm_errors::{
     algorithms::CRHError,
     dpc::DPCError,
-    objects::{BlockError, TransactionError},
+    objects::{BlockError, StorageError, TransactionError},
 };
 use snarkvm_posw::error::PoswError;
 

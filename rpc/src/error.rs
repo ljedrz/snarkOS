@@ -19,7 +19,7 @@ use snarkos_storage::error::StorageError;
 use snarkvm_errors::{
     algorithms::CRHError,
     dpc::DPCError,
-    objects::{AccountError, BlockError, TransactionError},
+    objects::{AccountError, BlockError, StorageError, TransactionError},
 };
 
 use std::fmt::Debug;

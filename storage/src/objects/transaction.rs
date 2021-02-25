@@ -14,10 +14,11 @@
 // You should have received a copy of the GNU General Public License
 // along with the snarkOS library. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::{error::StorageError, Ledger, TransactionLocation, COL_TRANSACTION_LOCATION};
+use crate::{Ledger, TransactionLocation, COL_TRANSACTION_LOCATION};
+use snarkvm_errors::objects::StorageError;
 use snarkvm_models::{
     algorithms::LoadableMerkleParameters,
-    objects::{LedgerScheme, Transaction},
+    objects::{LedgerScheme, Storage, Transaction},
 };
 use snarkvm_objects::BlockHeaderHash;
 use snarkvm_utilities::{
@@ -26,7 +27,7 @@ use snarkvm_utilities::{
     to_bytes,
 };
 
-impl<T: Transaction, P: LoadableMerkleParameters> Ledger<T, P> {
+impl<T: Transaction, P: LoadableMerkleParameters, S: Storage> Ledger<T, P, S> {
     /// Returns a transaction location given the transaction ID if it exists. Returns `None` otherwise.
     pub fn get_transaction_location(&self, transaction_id: &[u8]) -> Result<Option<TransactionLocation>, StorageError> {
         match self.storage.get(COL_TRANSACTION_LOCATION, &transaction_id)? {

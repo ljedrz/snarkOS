@@ -20,7 +20,7 @@ use snarkvm_dpc::base_dpc::{instantiated::*, parameters::PublicParameters, recor
 use snarkvm_models::{
     algorithms::{LoadableMerkleParameters, CRH},
     dpc::{DPCScheme, Record},
-    objects::Transaction,
+    objects::{Storage, Transaction},
 };
 use snarkvm_objects::{dpc::DPCTransactions, AccountAddress, Block, BlockHeader};
 use snarkvm_posw::{txids_to_roots, PoswMarlin};

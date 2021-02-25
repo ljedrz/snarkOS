@@ -22,7 +22,6 @@ mod protected_rpc_tests {
     use snarkos_testing::{
         consensus::*,
         network::{test_consensus, test_environment, ConsensusSetup, TestSetup},
-        storage::*,
     };
 
     use snarkvm_dpc::base_dpc::{
@@ -67,14 +66,6 @@ mod protected_rpc_tests {
         }
     }
 
-    fn unwrap_arc_rwlock<T>(x: Arc<RwLock<T>>) -> T {
-        if let Ok(lock) = Arc::try_unwrap(x) {
-            lock.into_inner()
-        } else {
-            panic!("can't unwrap the Arc, there are strong refs left!");
-        }
-    }
-
     async fn initialize_test_rpc(storage: Arc<RwLock<MerkleTreeLedger>>) -> MetaIoHandler<Meta> {
         let credentials = RpcCredentials {
             username: TEST_USERNAME.to_string(),
@@ -112,7 +103,6 @@ mod protected_rpc_tests {
         assert_eq!(extracted["error"]["message"], expected_result);
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -132,7 +122,6 @@ mod protected_rpc_tests {
         assert_eq!(extracted["result"], 1);
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -156,7 +145,6 @@ mod protected_rpc_tests {
         assert_eq!(extracted["result"], expected_result);
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -182,7 +170,6 @@ mod protected_rpc_tests {
         assert_eq!(extracted["result"], expected_result);
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -225,7 +212,6 @@ mod protected_rpc_tests {
         assert_eq!(commitment_randomness, record_info["commitment_randomness"]);
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -273,7 +259,6 @@ mod protected_rpc_tests {
         }
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -333,7 +318,6 @@ mod protected_rpc_tests {
         let _transaction: Tx = FromBytes::read(&transaction_bytes[..]).unwrap();
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -388,7 +372,6 @@ mod protected_rpc_tests {
             FromBytes::read(&transaction_kernel_bytes[..]).unwrap();
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -434,7 +417,6 @@ mod protected_rpc_tests {
         let _transaction: Tx = FromBytes::read(&transaction_bytes[..]).unwrap();
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 
     #[tokio::test]
@@ -466,6 +448,5 @@ mod protected_rpc_tests {
         let _address = AccountAddress::<Components>::from_str(&account.address).unwrap();
 
         drop(rpc);
-        kill_storage_sync(unwrap_arc_rwlock(storage));
     }
 }

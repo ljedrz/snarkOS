@@ -21,7 +21,7 @@ use snarkvm_models::{
 };
 use snarkvm_objects::Block;
 
-use std::{marker::PhantomData, path::PathBuf};
+use std::{marker::PhantomData, path::Path};
 
 pub struct EmptyLedger<T: Transaction, P: LoadableMerkleParameters> {
     parameters: P,
@@ -38,7 +38,11 @@ impl<T: Transaction, P: LoadableMerkleParameters> LedgerScheme for EmptyLedger<T
     type Transaction = T;
 
     /// Instantiates a new ledger with a genesis block.
-    fn new(_path: &PathBuf, parameters: Self::MerkleParameters, _genesis_block: Self::Block) -> anyhow::Result<Self> {
+    fn new(
+        _path: Option<&Path>,
+        parameters: Self::MerkleParameters,
+        _genesis_block: Self::Block,
+    ) -> anyhow::Result<Self> {
         Ok(Self {
             parameters,
             _transaction: PhantomData,
