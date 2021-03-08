@@ -28,7 +28,8 @@ path = "network/network.rs"
 harness = false
 
 [dependencies.snarkvm-utilities]
-version = "0.2.0"
+git = "https://github.com/ljedrz/snarkVM"
+branch = "storage_trait"
 
 [dependencies.snarkos-profiler]
 path = "../profiler"

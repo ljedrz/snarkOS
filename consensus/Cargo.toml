@@ -18,22 +18,28 @@ license = "GPL-3.0"
 edition = "2018"
 
 [dependencies.snarkvm-algorithms]
-version = "0.2.0"
+git = "https://github.com/ljedrz/snarkVM"
+branch = "storage_trait"
 
 [dependencies.snarkvm-curves]
-version = "0.2.0"
+git = "https://github.com/ljedrz/snarkVM"
+branch = "storage_trait"
 
 [dependencies.snarkvm-dpc]
-version = "0.2.0"
+git = "https://github.com/ljedrz/snarkVM"
+branch = "storage_trait"
 
 [dependencies.snarkvm-objects]
-version = "0.2.0"
+git = "https://github.com/ljedrz/snarkVM"
+branch = "storage_trait"
 
 [dependencies.snarkvm-posw]
-version = "0.2.0"
+git = "https://github.com/ljedrz/snarkVM"
+branch = "storage_trait"
 
 [dependencies.snarkvm-utilities]
-version = "0.2.0"
+git = "https://github.com/ljedrz/snarkVM"
+branch = "storage_trait"
 
 [dependencies.snarkos-profiler]
 path = "../profiler"

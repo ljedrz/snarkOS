@@ -23,19 +23,24 @@ rocksdb_storage = ["rocksdb"]
 mem_storage = []
 
 [dependencies.snarkvm-algorithms]
-version = "0.2.0"
+git = "https://github.com/ljedrz/snarkVM"
+branch = "storage_trait"
 
 [dependencies.snarkvm-dpc]
-version = "0.2.0"
+git = "https://github.com/ljedrz/snarkVM"
+branch = "storage_trait"
 
 [dependencies.snarkvm-objects]
-version = "0.2.0"
+git = "https://github.com/ljedrz/snarkVM"
+branch = "storage_trait"
 
 [dependencies.snarkvm-parameters]
-version = "0.2.0"
+git = "https://github.com/ljedrz/snarkVM"
+branch = "storage_trait"
 
 [dependencies.snarkvm-utilities]
-version = "0.2.0"
+git = "https://github.com/ljedrz/snarkVM"
+branch = "storage_trait"
 
 [dependencies.snarkos-parameters]
 path = "../parameters"
@@ -71,7 +76,8 @@ version = "1.0"
 path = "../consensus"
 
 [dev-dependencies.snarkvm-curves]
-version = "0.2.0"
+git = "https://github.com/ljedrz/snarkVM"
+branch = "storage_trait"
 
 [dev-dependencies.snarkos-testing]
 path = "../testing"
