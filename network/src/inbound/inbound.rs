@@ -231,7 +231,12 @@ impl<S: Storage + Send + Sync + 'static> Node<S> {
                 metrics::increment_counter!(stats::INBOUND_GETBLOCKS);
 
                 if self.sync().is_some() {
-                    self.received_get_blocks(source, hashes)?;
+                    let node = self.clone();
+                    task::spawn_blocking(move || {
+                        if let Err(e) = node.received_get_blocks(source, hashes) {
+                            error!("Couldn't process a GetBlocks request: {}", e);
+                        }
+                    });
                 }
             }
             Payload::GetMemoryPool => {
@@ -252,7 +257,12 @@ impl<S: Storage + Send + Sync + 'static> Node<S> {
                 metrics::increment_counter!(stats::INBOUND_GETSYNC);
 
                 if self.sync().is_some() {
-                    self.received_get_sync(source, getsync)?;
+                    let node = self.clone();
+                    task::spawn_blocking(move || {
+                        if let Err(e) = node.received_get_sync(source, getsync) {
+                            error!("Couldn't process a GetSync request: {}", e);
+                        }
+                    });
                 }
             }
             Payload::Sync(sync) => {
