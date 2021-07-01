@@ -49,7 +49,7 @@ pub struct BlockInfo {
     pub height: Option<u32>,
 
     /// Number of confirmations
-    pub confirmations: u32,
+    pub confirmations: Option<u32>,
 
     /// Block Size
     pub size: usize,

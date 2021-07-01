@@ -122,10 +122,7 @@ impl<S: Storage + Send + core::marker::Sync + 'static> RpcFunctions for RpcImpl<
             Err(_) => None,
         };
 
-        let confirmations = match height {
-            Some(block_height) => storage.get_current_block_height() - block_height,
-            None => 0,
-        };
+        let confirmations = height.map(|h| storage.get_current_block_height() - h);
 
         if let Ok(block) = storage.get_block(&block_header_hash) {
             let mut transactions = Vec::with_capacity(block.transactions.len());
