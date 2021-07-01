@@ -60,9 +60,6 @@ impl<S: Storage + Send + core::marker::Sync + 'static> Deref for RpcImpl<S> {
 }
 
 pub struct RpcInner<S: Storage + Send + core::marker::Sync + 'static> {
-    /// Blockchain database storage.
-    pub(crate) storage: Arc<MerkleTreeLedger<S>>,
-
     /// RPC credentials for accessing guarded endpoints
     pub(crate) credentials: Option<RpcCredentials>,
 
@@ -72,12 +69,8 @@ pub struct RpcInner<S: Storage + Send + core::marker::Sync + 'static> {
 
 impl<S: Storage + Send + core::marker::Sync + 'static> RpcImpl<S> {
     /// Creates a new struct for calling public and private RPC endpoints.
-    pub fn new(storage: Arc<MerkleTreeLedger<S>>, credentials: Option<RpcCredentials>, node: Node<S>) -> Self {
-        Self(Arc::new(RpcInner {
-            storage,
-            credentials,
-            node,
-        }))
+    pub fn new(credentials: Option<RpcCredentials>, node: Node<S>) -> Self {
+        Self(Arc::new(RpcInner { credentials, node }))
     }
 
     pub fn sync_handler(&self) -> Result<&Arc<Sync<S>>, RpcError> {
@@ -96,6 +89,10 @@ impl<S: Storage + Send + core::marker::Sync + 'static> RpcImpl<S> {
         Ok(self.sync_handler()?.memory_pool())
     }
 
+    pub fn storage(&self) -> Result<&MerkleTreeLedger<S>, RpcError> {
+        Ok(self.sync_handler()?.storage())
+    }
+
     pub fn known_network(&self) -> Result<&KnownNetwork, RpcError> {
         self.node.known_network().ok_or(RpcError::NoKnownNetwork)
     }
@@ -109,9 +106,7 @@ impl<S: Storage + Send + core::marker::Sync + 'static> RpcFunctions for RpcImpl<
             return Err(RpcError::InvalidBlockHash(block_hash_string));
         }
 
-        let storage = &self.storage;
-
-        storage.catch_up_secondary(false)?;
+        let storage = self.storage()?;
 
         let block_header_hash = BlockHeaderHash::new(block_hash);
         let height = match storage.get_block_number(&block_header_hash) {
@@ -152,15 +147,12 @@ impl<S: Storage + Send + core::marker::Sync + 'static> RpcFunctions for RpcImpl<
 
     /// Returns the number of blocks in the canonical chain.
     fn get_block_count(&self) -> Result<u32, RpcError> {
-        let storage = &self.storage;
-        storage.catch_up_secondary(false)?;
-        Ok(storage.get_block_count())
+        Ok(self.storage()?.get_block_count())
     }
 
     /// Returns the block hash of the head of the canonical chain.
     fn get_best_block_hash(&self) -> Result<String, RpcError> {
-        let storage = &self.storage;
-        storage.catch_up_secondary(false)?;
+        let storage = self.storage()?;
         let best_block_hash = storage.get_block_hash(storage.get_current_block_height())?;
 
         Ok(hex::encode(&best_block_hash.0))
@@ -168,19 +160,15 @@ impl<S: Storage + Send + core::marker::Sync + 'static> RpcFunctions for RpcImpl<
 
     /// Returns the block hash of the index specified if it exists in the canonical chain.
     fn get_block_hash(&self, block_height: u32) -> Result<String, RpcError> {
-        let storage = &self.storage;
-        storage.catch_up_secondary(false)?;
-        let block_hash = storage.get_block_hash(block_height)?;
+        let block_hash = self.storage()?.get_block_hash(block_height)?;
 
         Ok(hex::encode(&block_hash.0))
     }
 
     /// Returns the hex encoded bytes of a transaction from its transaction id.
     fn get_raw_transaction(&self, transaction_id: String) -> Result<String, RpcError> {
-        let storage = &self.storage;
-        storage.catch_up_secondary(false)?;
         Ok(hex::encode(
-            &storage.get_transaction_bytes(&hex::decode(transaction_id)?)?,
+            &self.storage()?.get_transaction_bytes(&hex::decode(transaction_id)?)?,
         ))
     }
 
@@ -192,7 +180,6 @@ impl<S: Storage + Send + core::marker::Sync + 'static> RpcFunctions for RpcImpl<
 
     /// Returns information about a transaction from serialized transaction bytes.
     fn decode_raw_transaction(&self, transaction_bytes: String) -> Result<TransactionInfo, RpcError> {
-        self.storage.catch_up_secondary(false)?;
         let transaction_bytes = hex::decode(transaction_bytes)?;
         let transaction = Tx::read(&transaction_bytes[..])?;
 
@@ -224,7 +211,7 @@ impl<S: Storage + Send + core::marker::Sync + 'static> RpcFunctions for RpcImpl<
         }
 
         let transaction_id = transaction.transaction_id()?;
-        let storage = &self.storage;
+        let storage = self.storage()?;
         let block_number = match storage.get_transaction_location(&transaction_id.to_vec())? {
             Some(block_location) => storage
                 .get_block_number(&BlockHeaderHash(block_location.block_hash))
@@ -260,9 +247,7 @@ impl<S: Storage + Send + core::marker::Sync + 'static> RpcFunctions for RpcImpl<
         let transaction = Tx::read(&transaction_bytes[..])?;
         let transaction_hex_id = hex::encode(transaction.transaction_id()?);
 
-        let storage = &self.storage;
-
-        storage.catch_up_secondary(false)?;
+        let storage = self.storage()?;
 
         if !self.sync_handler()?.consensus.verify_transaction(&transaction)? {
             // TODO (raychu86) Add more descriptive message. (e.g. tx already exists)
@@ -279,7 +264,7 @@ impl<S: Storage + Send + core::marker::Sync + 'static> RpcFunctions for RpcImpl<
                 let self_clone = self.clone();
                 tokio::spawn(async move {
                     match self_clone.memory_pool() {
-                        Ok(pool) => match pool.insert(&self_clone.storage, entry).await {
+                        Ok(pool) => match pool.insert(self_clone.storage().unwrap(), entry).await {
                             Ok(Some(_)) => {
                                 info!("Transaction added to the memory pool.");
                             }
@@ -304,10 +289,6 @@ impl<S: Storage + Send + core::marker::Sync + 'static> RpcFunctions for RpcImpl<
     fn validate_raw_transaction(&self, transaction_bytes: String) -> Result<bool, RpcError> {
         let transaction_bytes = hex::decode(transaction_bytes)?;
         let transaction = Tx::read(&transaction_bytes[..])?;
-
-        let storage = &self.storage;
-
-        storage.catch_up_secondary(false)?;
 
         Ok(self.sync_handler()?.consensus.verify_transaction(&transaction)?)
     }
@@ -346,7 +327,7 @@ impl<S: Storage + Send + core::marker::Sync + 'static> RpcFunctions for RpcImpl<
 
         // Note: Temporarily overriding node metrics here, as they aren't all correctly updated
         // @sadroeck - remove me
-        metrics.misc.block_height = self.storage.current_block_height.load(Ordering::Relaxed) as u64;
+        metrics.misc.block_height = self.storage()?.current_block_height.load(Ordering::Relaxed) as u64;
         metrics.connections.connected_peers = self.node.peer_book.get_active_peer_count();
         metrics.connections.disconnected_peers = self.node.peer_book.get_disconnected_peer_count();
         metrics.misc.block_height = self
@@ -360,8 +341,7 @@ impl<S: Storage + Send + core::marker::Sync + 'static> RpcFunctions for RpcImpl<
 
     /// Returns the current mempool and sync information known by this node.
     fn get_block_template(&self) -> Result<BlockTemplate, RpcError> {
-        let storage = &self.storage;
-        storage.catch_up_secondary(false)?;
+        let storage = self.storage()?;
 
         let block_height = storage.get_current_block_height();
         let block = storage.get_block_from_block_number(block_height)?;

@@ -21,7 +21,6 @@ use crate::{
     rpc_types::{Meta, RpcCredentials},
     RpcImpl,
 };
-use snarkos_consensus::MerkleTreeLedger;
 use snarkos_metrics::{self as metrics, misc};
 use snarkos_network::Node;
 use snarkvm_dpc::Storage;
@@ -37,7 +36,7 @@ use jsonrpc_core::Params;
 use serde::Serialize;
 use tokio::task;
 
-use std::{convert::Infallible, net::SocketAddr, sync::Arc};
+use std::{convert::Infallible, net::SocketAddr};
 
 const METHODS_EXPECTING_PARAMS: [&str; 14] = [
     // public
@@ -61,7 +60,6 @@ const METHODS_EXPECTING_PARAMS: [&str; 14] = [
 #[allow(clippy::too_many_arguments)]
 pub fn start_rpc_server<S: Storage + Send + Sync + 'static>(
     rpc_addr: SocketAddr,
-    secondary_storage: Arc<MerkleTreeLedger<S>>,
     node_server: Node<S>,
     username: Option<String>,
     password: Option<String>,
@@ -71,7 +69,7 @@ pub fn start_rpc_server<S: Storage + Send + Sync + 'static>(
         _ => None,
     };
 
-    let rpc_impl = RpcImpl::new(secondary_storage, credentials, node_server);
+    let rpc_impl = RpcImpl::new(credentials, node_server);
 
     let service = make_service_fn(move |_conn| {
         let rpc = rpc_impl.clone();

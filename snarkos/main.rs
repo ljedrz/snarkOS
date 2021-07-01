@@ -219,25 +219,11 @@ async fn start_server(config: Config) -> anyhow::Result<()> {
 
     // Start RPC thread, if the RPC configuration is enabled.
     if config.rpc.json_rpc {
-        let secondary_storage = if is_storage_in_memory {
-            // In-memory storage doesn't require a secondary instance.
-            storage
-        } else {
-            // Open a secondary storage instance to prevent resource sharing and bottle-necking.
-            Arc::new(MerkleTreeLedger::open_secondary_at_path(path.clone())?)
-        };
-
         let rpc_address = format!("{}:{}", config.rpc.ip, config.rpc.port)
             .parse()
             .expect("Invalid RPC server address!");
 
-        let rpc_handle = start_rpc_server(
-            rpc_address,
-            secondary_storage,
-            node.clone(),
-            config.rpc.username,
-            config.rpc.password,
-        );
+        let rpc_handle = start_rpc_server(rpc_address, node.clone(), config.rpc.username, config.rpc.password);
         node.register_task(rpc_handle);
 
         info!("Listening for RPC requests on port {}", config.rpc.port);

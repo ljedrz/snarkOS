@@ -553,7 +553,7 @@ impl<S: Storage + Send + Sync + 'static> ProtectedRpcFunctions for RpcImpl<S> {
             transaction_kernel,
             old_death_program_proofs,
             new_birth_program_proofs,
-            &*self.storage,
+            self.storage()?,
             rng,
         )?;
 
@@ -571,18 +571,14 @@ impl<S: Storage + Send + Sync + 'static> ProtectedRpcFunctions for RpcImpl<S> {
 
     /// Returns the number of record commitments that are stored on the full node.
     fn get_record_commitment_count(&self) -> Result<usize, RpcError> {
-        let storage = &self.storage;
-        storage.catch_up_secondary(false)?;
-        let record_commitments = storage.get_record_commitments(None)?;
+        let record_commitments = self.storage()?.get_record_commitments(None)?;
 
         Ok(record_commitments.len())
     }
 
     /// Returns a list of record commitments that are stored on the full node.
     fn get_record_commitments(&self) -> Result<Vec<String>, RpcError> {
-        let storage = &self.storage;
-        storage.catch_up_secondary(false)?;
-        let record_commitments = storage.get_record_commitments(Some(100))?;
+        let record_commitments = self.storage()?.get_record_commitments(Some(100))?;
         let record_commitment_strings: Vec<String> = record_commitments.iter().map(hex::encode).collect();
 
         Ok(record_commitment_strings)
@@ -591,7 +587,7 @@ impl<S: Storage + Send + Sync + 'static> ProtectedRpcFunctions for RpcImpl<S> {
     /// Returns the hex encoded bytes of a record from its record commitment
     fn get_raw_record(&self, record_commitment: String) -> Result<String, RpcError> {
         match self
-            .storage
+            .storage()?
             .get_record::<DPCRecord<Components>>(&hex::decode(record_commitment)?)?
         {
             Some(record) => {
