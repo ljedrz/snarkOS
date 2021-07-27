@@ -313,20 +313,25 @@ impl<S: Storage + Send + Sync + 'static> Node<S> {
         // Bootnodes apply less strict filtering rules if the set is empty by falling back on
         // connected peers that may or may not be routable...
         let peers = if self.config.is_bootnode() && strictly_filtered_peers.is_empty() {
-            let filtered_peers: Vec<SocketAddr> = connected_peers
+            let mut filtered_peers: Vec<SocketAddr> = connected_peers
                 .iter()
                 .filter(|peer| basic_filter(peer))
                 .map(|peer| peer.address)
                 .collect();
 
             // ...and if need be on disconnected peers.
-            if filtered_peers.is_empty() {
-                self.peer_book
+            if filtered_peers.len() < crate::SHARED_PEER_COUNT {
+                let more_peers = self
+                    .peer_book
                     .disconnected_peers_snapshot()
                     .iter()
                     .filter(|peer| basic_filter(peer))
+                    .take(crate::SHARED_PEER_COUNT - filtered_peers.len())
                     .map(|peer| peer.address)
-                    .collect()
+                    .collect::<Vec<_>>();
+
+                filtered_peers.extend_from_slice(&more_peers);
+                filtered_peers
             } else {
                 filtered_peers
             }
