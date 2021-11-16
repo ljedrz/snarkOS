@@ -55,14 +55,16 @@ impl<N: Network, E: Environment> Server<N, E> {
     ///
     #[inline]
     pub(crate) async fn initialize(
+        node_ip: String,
         node_port: u16,
+        rpc_ip: String,
         rpc_port: u16,
         username: String,
         password: String,
         miner: Option<Address<N>>,
     ) -> Result<Self> {
         // Initialize a new TCP listener at the given IP.
-        let (local_ip, listener) = match TcpListener::bind(&format!("0.0.0.0:{}", node_port)).await {
+        let (local_ip, listener) = match TcpListener::bind(&format!("{}:{}", node_ip, node_port)).await {
             Ok(listener) => (listener.local_addr().expect("Failed to fetch the local IP"), listener),
             Err(error) => panic!("Failed to bind listener: {:?}. Check if another Aleo node is running", error),
         };
@@ -87,7 +89,7 @@ impl<N: Network, E: Environment> Server<N, E> {
 
         // Initialize a new instance of the RPC server.
         tasks.append(initialize_rpc_server::<N, E>(
-            format!("0.0.0.0:{}", rpc_port).parse()?,
+            format!("{}:{}", rpc_ip, rpc_port).parse()?,
             username,
             password,
             &peers,

@@ -35,9 +35,15 @@ pub struct Node {
     /// Specify the network of this node.
     #[structopt(default_value = "2", short = "n", long = "network")]
     pub network: u16,
+    /// The listener IP of the node.
+    #[structopt(default_value = "0:0:0:0", long = "node-ip")]
+    pub node_ip: String,
     /// Specify the port for the node server.
     #[structopt(long = "node")]
     pub node: Option<u16>,
+    /// The IP address of the RPC server.
+    #[structopt(default_value = "0:0:0:0", long = "rpc-ip")]
+    pub rpc_ip: String,
     /// Specify the port for the RPC server.
     #[structopt(long = "rpc")]
     pub rpc: Option<u16>,
@@ -83,8 +89,11 @@ impl Node {
     }
 
     async fn start_server<N: Network, E: Environment>(&self) -> Result<()> {
+        let node_ip = self.node_ip.clone();
         let node_port = self.node.unwrap_or(E::DEFAULT_NODE_PORT);
+        let rpc_ip = self.rpc_ip.clone();
         let rpc_port = self.rpc.unwrap_or(E::DEFAULT_RPC_PORT);
+
         assert!(
             !(node_port < 4130),
             "Until configuration files are established, the node port must be at least 4130 or greater"
@@ -107,8 +116,16 @@ impl Node {
 
         if self.display {
             println!("\nThe snarkOS console is initializing...\n");
-            let server =
-                Server::<N, E>::initialize(node_port, rpc_port, self.rpc_username.clone(), self.rpc_password.clone(), miner).await?;
+            let server = Server::<N, E>::initialize(
+                node_ip,
+                node_port,
+                rpc_ip,
+                rpc_port,
+                self.rpc_username.clone(),
+                self.rpc_password.clone(),
+                miner,
+            )
+            .await?;
             if let Some(peer_ip) = &self.connect {
                 server.connect_to(peer_ip.parse().unwrap()).await?;
             }
@@ -116,8 +133,16 @@ impl Node {
             Ok(())
         } else {
             self.initialize_logger();
-            let server =
-                Server::<N, E>::initialize(node_port, rpc_port, self.rpc_username.clone(), self.rpc_password.clone(), miner).await?;
+            let server = Server::<N, E>::initialize(
+                node_ip,
+                node_port,
+                rpc_ip,
+                rpc_port,
+                self.rpc_username.clone(),
+                self.rpc_password.clone(),
+                miner,
+            )
+            .await?;
             if let Some(peer_ip) = &self.connect {
                 server.connect_to(peer_ip.parse().unwrap()).await?;
             }
