@@ -348,7 +348,9 @@ impl<N: Network, E: Environment> Peers<N, E> {
                         .iter()
                         .filter(|(&peer_ip, _)| {
                             let peer_str = peer_ip.to_string();
-                            !E::SYNC_NODES.contains(&peer_str.as_str()) && !E::BEACON_NODES.contains(&peer_str.as_str())
+                            !E::SYNC_NODES.contains(&peer_str.as_str())
+                                && !E::BEACON_NODES.contains(&peer_str.as_str())
+                                && !E::TRUSTED_NODES.contains(&peer_str.as_str())
                         })
                         .take(num_excess_peers)
                         .map(|(&peer_ip, _)| peer_ip)
@@ -379,6 +381,27 @@ impl<N: Network, E: Environment> Peers<N, E> {
                         self.send(peer_ip, Message::Disconnect).await;
                         // Add an entry for this `Peer` in the restricted peers.
                         self.restricted_peers.write().await.insert(peer_ip, Instant::now());
+                    }
+                }
+
+                // Ensure that the trusted nodes are connected.
+                if !E::TRUSTED_NODES.is_empty() {
+                    let connected_peers: HashSet<_> = self.connected_peers.read().await.keys().into_iter().copied().collect();
+                    let trusted_nodes: HashSet<_> = E::TRUSTED_NODES.iter().map(|ip| ip.parse().unwrap()).collect();
+                    let disconnected_trusted_nodes: Vec<_> = trusted_nodes.difference(&connected_peers).copied().collect();
+                    for peer_ip in disconnected_trusted_nodes {
+                        // Initialize the connection process.
+                        let (router, handler) = oneshot::channel();
+                        let request =
+                            PeersRequest::Connect(peer_ip, ledger_reader.clone(), ledger_router.clone(), prover_router.clone(), router);
+                        if let Err(error) = self.peers_router.send(request).await {
+                            warn!("Failed to transmit the request: '{}'", error);
+                        }
+
+                        // Do not wait for the result of each connection.
+                        task::spawn(async move {
+                            let _ = handler.await;
+                        });
                     }
                 }
 
