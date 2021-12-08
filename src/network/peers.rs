@@ -121,6 +121,8 @@ pub struct Peers<N: Network, E: Environment> {
     seen_outbound_connections: RwLock<HashMap<SocketAddr, SystemTime>>,
     /// The map of peers to a map of transaction IDs to their last seen timestamp.
     seen_outbound_transactions: RwLock<HashMap<SocketAddr, HashMap<N::TransactionID, SystemTime>>>,
+    /// The list of tasks spawned by the node.
+    tasks: Tasks<task::JoinHandle<()>>,
 }
 
 impl<N: Network, E: Environment> Peers<N, E> {
@@ -128,7 +130,7 @@ impl<N: Network, E: Environment> Peers<N, E> {
     /// Initializes a new instance of `Peers`.
     ///
     pub(crate) async fn new(
-        tasks: &mut Tasks<JoinHandle<()>>,
+        tasks: Tasks<JoinHandle<()>>,
         local_ip: SocketAddr,
         local_nonce: Option<u64>,
         local_status: &Status,
@@ -155,6 +157,7 @@ impl<N: Network, E: Environment> Peers<N, E> {
             seen_inbound_connections: Default::default(),
             seen_outbound_connections: Default::default(),
             seen_outbound_transactions: Default::default(),
+            tasks: tasks.clone(),
         });
 
         // Initialize the peers router process.
@@ -322,6 +325,7 @@ impl<N: Network, E: Environment> Peers<N, E> {
                                         prover_router,
                                         self.connected_nonces().await,
                                         Some(connection_result),
+                                        self.tasks.clone(),
                                     )
                                     .await
                                 }
@@ -434,9 +438,9 @@ impl<N: Network, E: Environment> Peers<N, E> {
                             warn!("Failed to transmit the request: '{}'", error);
                         }
                         // Do not wait for the result of each connection.
-                        task::spawn(async move {
+                        self.tasks.append(task::spawn(async move {
                             let _ = handler.await;
-                        });
+                        }));
                     }
                 }
             }
@@ -519,6 +523,7 @@ impl<N: Network, E: Environment> Peers<N, E> {
                             prover_router,
                             self.connected_nonces().await,
                             None,
+                            self.tasks.clone(),
                         )
                         .await;
                     }
@@ -960,10 +965,12 @@ impl<N: Network, E: Environment> Peer<N, E> {
         prover_router: ProverRouter<N>,
         connected_nonces: Vec<u64>,
         connection_result: Option<ConnectionResult>,
+        tasks: Tasks<task::JoinHandle<()>>,
     ) {
         let peers_router = peers_router.clone();
 
-        task::spawn(async move {
+        let tasks_clone = tasks.clone();
+        tasks.append(task::spawn(async move {
             // Register our peer with state which internally sets up some channels.
             let mut peer = match Peer::new(
                 stream,
@@ -1161,7 +1168,7 @@ impl<N: Network, E: Environment> Peer<N, E> {
                                     let local_status = local_status.clone();
                                     let peers_router = peers_router.clone();
                                     let ledger_reader = ledger_reader.clone();
-                                    task::spawn(async move {
+                                    tasks_clone.append(task::spawn(async move {
                                         // Sleep for the preset time before sending a `Ping` request.
                                         tokio::time::sleep(Duration::from_secs(E::PING_SLEEP_IN_SECS)).await;
 
@@ -1174,7 +1181,7 @@ impl<N: Network, E: Environment> Peer<N, E> {
                                         if let Err(error) = peers_router.send(PeersRequest::MessageSend(peer_ip, message)).await {
                                             warn!("[Ping] {}", error);
                                         }
-                                    });
+                                    }));
                                 }
                                 Message::UnconfirmedBlock(block_height, block_hash, block) => {
                                     // Drop the peer, if they have sent more than 5 unconfirmed blocks in the last 5 seconds.
@@ -1293,6 +1300,6 @@ impl<N: Network, E: Environment> Peer<N, E> {
             {
                 warn!("[Peer::Disconnect] {}", error);
             }
-        });
+        }));
     }
 }
