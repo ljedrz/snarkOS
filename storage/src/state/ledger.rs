@@ -16,7 +16,7 @@
 
 use crate::{
     helpers::BlockLocators,
-    storage::{DataMap, Map, Storage},
+    storage::{DataMap, Map, MapId, Storage},
 };
 use snarkvm::dpc::prelude::*;
 
@@ -107,9 +107,8 @@ impl<N: Network> LedgerState<N> {
     ///
     pub fn open_writer<S: Storage, P: AsRef<Path>>(path: P) -> Result<Self> {
         // Open storage.
-        let context = N::NETWORK_ID;
         let is_read_only = false;
-        let storage = S::open(path, context, is_read_only)?;
+        let storage = S::open(path, N::NETWORK_ID, is_read_only)?;
 
         // Initialize the ledger.
         let ledger = Self {
@@ -118,7 +117,7 @@ impl<N: Network> LedgerState<N> {
             latest_block_hashes: RwLock::new(CircularQueue::with_capacity(MAXIMUM_LINEAR_BLOCK_LOCATORS as usize)),
             latest_block_headers: RwLock::new(CircularQueue::with_capacity(MAXIMUM_LINEAR_BLOCK_LOCATORS as usize)),
             latest_block_locators: Default::default(),
-            ledger_roots: storage.open_map("ledger_roots")?,
+            ledger_roots: storage.open_map(MapId::LedgerRoots)?,
             blocks: BlockState::open(storage)?,
             read_only: (is_read_only, Arc::new(AtomicU32::new(0)), RwLock::new(None)),
         };
@@ -232,9 +231,8 @@ impl<N: Network> LedgerState<N> {
     ///
     pub fn open_reader<S: Storage, P: AsRef<Path>>(path: P) -> Result<Arc<Self>> {
         // Open storage.
-        let context = N::NETWORK_ID;
         let is_read_only = true;
-        let storage = S::open(path, context, is_read_only)?;
+        let storage = S::open(path, N::NETWORK_ID, is_read_only)?;
 
         // Initialize the ledger.
         let ledger = Arc::new(Self {
@@ -243,7 +241,7 @@ impl<N: Network> LedgerState<N> {
             latest_block_hashes: RwLock::new(CircularQueue::with_capacity(MAXIMUM_LINEAR_BLOCK_LOCATORS as usize)),
             latest_block_headers: RwLock::new(CircularQueue::with_capacity(MAXIMUM_LINEAR_BLOCK_LOCATORS as usize)),
             latest_block_locators: Default::default(),
-            ledger_roots: storage.open_map("ledger_roots")?,
+            ledger_roots: storage.open_map(MapId::LedgerRoots)?,
             blocks: BlockState::open(storage)?,
             read_only: (is_read_only, Arc::new(AtomicU32::new(0)), RwLock::new(None)),
         });
@@ -1108,9 +1106,9 @@ impl<N: Network> BlockState<N> {
     /// Initializes a new instance of `BlockState`.
     fn open<S: Storage>(storage: S) -> Result<Self> {
         Ok(Self {
-            block_heights: storage.open_map("block_heights")?,
-            block_headers: storage.open_map("block_headers")?,
-            block_transactions: storage.open_map("block_transactions")?,
+            block_heights: storage.open_map(MapId::BlockHeights)?,
+            block_headers: storage.open_map(MapId::BlockHeaders)?,
+            block_transactions: storage.open_map(MapId::BlockTransactions)?,
             transactions: TransactionState::open(storage)?,
             map_lock: Default::default(),
         })
@@ -1378,10 +1376,10 @@ impl<N: Network> TransactionState<N> {
     /// Initializes a new instance of `TransactionState`.
     fn open<S: Storage>(storage: S) -> Result<Self> {
         Ok(Self {
-            transactions: storage.open_map("transactions")?,
-            transitions: storage.open_map("transitions")?,
-            serial_numbers: storage.open_map("serial_numbers")?,
-            commitments: storage.open_map("commitments")?,
+            transactions: storage.open_map(MapId::Transactions)?,
+            transitions: storage.open_map(MapId::Transitions)?,
+            serial_numbers: storage.open_map(MapId::SerialNumbers)?,
+            commitments: storage.open_map(MapId::Commitments)?,
         })
     }
 

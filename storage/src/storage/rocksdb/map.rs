@@ -16,10 +16,24 @@
 
 use super::*;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[repr(u16)]
+pub enum MapId {
+    BlockHeaders,
+    BlockHeights,
+    BlockTransactions,
+    Commitments,
+    LedgerRoots,
+    Records,
+    SerialNumbers,
+    Transactions,
+    Transitions,
+}
+
 #[derive(Clone, Debug)]
 pub struct DataMap<K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwned> {
     pub(super) rocksdb: Arc<rocksdb::DB>,
-    pub(super) context: Vec<u8>,
+    pub(super) prefix: [u8; 4], // network id + map id, both with a u16 repr
     pub(super) is_read_only: bool,
     pub(super) _phantom: PhantomData<(K, V)>,
 }
@@ -48,7 +62,7 @@ impl<'a, K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwned> Map<'
         K: Borrow<Q>,
         Q: Serialize + ?Sized,
     {
-        let mut key_buf = self.context.clone();
+        let mut key_buf = self.prefix.to_vec();
         key_buf.reserve(bincode::serialized_size(&key)? as usize);
         bincode::serialize_into(&mut key_buf, &key)?;
         match self.rocksdb.get(&key_buf)? {
@@ -65,7 +79,7 @@ impl<'a, K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwned> Map<'
         K: Borrow<Q>,
         Q: Serialize + ?Sized,
     {
-        let mut key_buf = self.context.clone();
+        let mut key_buf = self.prefix.to_vec();
         key_buf.reserve(bincode::serialized_size(&key)? as usize);
         bincode::serialize_into(&mut key_buf, &key)?;
         let value_buf = bincode::serialize(value)?;
@@ -82,7 +96,7 @@ impl<'a, K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwned> Map<'
         K: Borrow<Q>,
         Q: Serialize + ?Sized,
     {
-        let mut key_buf = self.context.clone();
+        let mut key_buf = self.prefix.to_vec();
         key_buf.reserve(bincode::serialized_size(&key)? as usize);
         bincode::serialize_into(&mut key_buf, &key)?;
 
@@ -94,21 +108,21 @@ impl<'a, K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwned> Map<'
     /// Returns an iterator visiting each key-value pair in the map.
     ///
     fn iter(&'a self) -> Self::Iterator {
-        Iter::new(self.rocksdb.prefix_iterator(&self.context), self.context.len())
+        Iter::new(self.rocksdb.prefix_iterator(&self.prefix), self.prefix.len())
     }
 
     ///
     /// Returns an iterator over each key in the map.
     ///
     fn keys(&'a self) -> Self::Keys {
-        Keys::new(self.rocksdb.prefix_iterator(&self.context), self.context.len())
+        Keys::new(self.rocksdb.prefix_iterator(&self.prefix), self.prefix.len())
     }
 
     ///
     /// Returns an iterator over each value in the map.
     ///
     fn values(&'a self) -> Self::Values {
-        Values::new(self.rocksdb.prefix_iterator(&self.context))
+        Values::new(self.rocksdb.prefix_iterator(&self.prefix))
     }
 
     ///

@@ -21,7 +21,7 @@ mod keys;
 use keys::*;
 
 mod map;
-pub(crate) use map::*;
+pub use map::*;
 
 mod values;
 use values::*;
@@ -47,7 +47,7 @@ use std::{borrow::Borrow, fmt, marker::PhantomData, path::Path, sync::Arc};
 #[derive(Clone)]
 pub struct RocksDB {
     rocksdb: Arc<rocksdb::DB>,
-    context: Vec<u8>,
+    network_id: u16,
     is_read_only: bool,
 }
 
@@ -55,16 +55,12 @@ impl Storage for RocksDB {
     ///
     /// Opens storage at the given `path` and `context`.
     ///
-    fn open<P: AsRef<Path>>(path: P, context: u16, is_read_only: bool) -> Result<Self> {
-        let context = context.to_le_bytes();
-        let mut context_bytes = bincode::serialize(&(context.len() as u32)).unwrap();
-        context_bytes.extend_from_slice(&context);
-
+    fn open<P: AsRef<Path>>(path: P, network_id: u16, is_read_only: bool) -> Result<Self> {
         // Customize database options.
         let mut options = rocksdb::Options::default();
 
         // FIXME: shorten the prefixes and make them the same length
-        let prefix_extractor = rocksdb::SliceTransform::create_fixed_prefix(16);
+        let prefix_extractor = rocksdb::SliceTransform::create_fixed_prefix(4);
         options.set_prefix_extractor(prefix_extractor);
         options.set_memtable_prefix_bloom_ratio(0.05);
 
@@ -86,7 +82,7 @@ impl Storage for RocksDB {
 
         Ok(RocksDB {
             rocksdb,
-            context: context_bytes,
+            network_id,
             is_read_only,
         })
     }
@@ -94,18 +90,14 @@ impl Storage for RocksDB {
     ///
     /// Opens a map with the given `context` from storage.
     ///
-    fn open_map<K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwned>(&self, context: &str) -> Result<DataMap<K, V>> {
-        // Convert the new context into bytes.
-        let new_context = context.as_bytes();
-
-        // Combine contexts to create a new scope.
-        let mut context_bytes = self.context.clone();
-        bincode::serialize_into(&mut context_bytes, &(new_context.len() as u32))?;
-        context_bytes.extend_from_slice(new_context);
+    fn open_map<K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwned>(&self, map_id: MapId) -> Result<DataMap<K, V>> {
+        let mut prefix = [0u8; 4];
+        prefix[..2].copy_from_slice(&self.network_id.to_le_bytes());
+        prefix[2..].copy_from_slice(&(map_id as u16).to_le_bytes());
 
         Ok(DataMap {
             rocksdb: self.rocksdb.clone(),
-            context: context_bytes,
+            prefix,
             is_read_only: self.is_read_only,
             _phantom: PhantomData,
         })
