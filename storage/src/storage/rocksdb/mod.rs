@@ -63,6 +63,8 @@ impl Storage for RocksDB {
         let prefix_extractor = rocksdb::SliceTransform::create_fixed_prefix(4);
         options.set_prefix_extractor(prefix_extractor);
         options.set_memtable_prefix_bloom_ratio(0.05);
+        options.set_memtable_whole_key_filtering(true);
+        options.set_bloom_locality(1);
 
         let primary = path.as_ref().to_path_buf();
         let rocksdb = match is_read_only {
