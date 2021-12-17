@@ -30,7 +30,6 @@ use snarkvm::dpc::prelude::*;
 
 use anyhow::Result;
 use rand::thread_rng;
-use rayon::{ThreadPool, ThreadPoolBuilder};
 use std::{
     net::SocketAddr,
     path::Path,
@@ -69,8 +68,6 @@ pub enum ProverRequest<N: Network> {
 pub struct Prover<N: Network, E: Environment> {
     /// The state storage of the prover.
     state: Arc<ProverState<N>>,
-    /// The thread pool for the miner.
-    miner: Arc<ThreadPool>,
     /// The prover router of the node.
     prover_router: ProverRouter<N>,
     /// The pool of unconfirmed transactions.
@@ -102,16 +99,10 @@ impl<N: Network, E: Environment> Prover<N, E> {
     ) -> Result<Arc<Self>> {
         // Initialize an mpsc channel for sending requests to the `Prover` struct.
         let (prover_router, mut prover_handler) = mpsc::channel(1024);
-        // Initialize the prover pool.
-        let pool = ThreadPoolBuilder::new()
-            .stack_size(8 * 1024 * 1024)
-            .num_threads((num_cpus::get() / 8 * 7).max(1))
-            .build()?;
 
         // Initialize the prover.
         let prover = Arc::new(Self {
             state: Arc::new(ProverState::open_writer::<S, P>(path)?),
-            miner: Arc::new(pool),
             prover_router,
             memory_pool: Arc::new(RwLock::new(MemoryPool::new())),
             status: status.clone(),
@@ -156,7 +147,6 @@ impl<N: Network, E: Environment> Prover<N, E> {
 
                             // Prepare the unconfirmed transactions, terminator, and status.
                             let state = prover.state.clone();
-                            let miner = prover.miner.clone();
                             let canon = prover.ledger_reader.clone(); // This is *safe* as the ledger only reads.
                             let unconfirmed_transactions = prover.memory_pool.read().await.transactions();
                             let terminator = prover.terminator.clone();
@@ -167,15 +157,13 @@ impl<N: Network, E: Environment> Prover<N, E> {
                             tasks_clone.append(task::spawn(async move {
                                 // Mine the next block.
                                 let result = task::spawn_blocking(move || {
-                                    miner.install(move || {
-                                        canon.mine_next_block(
-                                            recipient,
-                                            E::COINBASE_IS_PUBLIC,
-                                            &unconfirmed_transactions,
-                                            &terminator,
-                                            &mut thread_rng(),
-                                        )
-                                    })
+                                    canon.mine_next_block(
+                                        recipient,
+                                        E::COINBASE_IS_PUBLIC,
+                                        &unconfirmed_transactions,
+                                        &terminator,
+                                        &mut thread_rng(),
+                                    )
                                 })
                                 .await
                                 .map_err(|e| e.into());
