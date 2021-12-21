@@ -296,7 +296,7 @@ impl<N: Network, E: Environment> Ledger<N, E> {
                 self.disconnect_from_failing_peers().await;
                 // Update the block requests.
                 self.update_block_requests().await;
-
+                /*
                 debug!(
                     "Status Report (type = {}, status = {}, block_height = {}, cumulative_weight = {}, block_requests = {}, connected_peers = {})",
                     E::NODE_TYPE,
@@ -305,7 +305,7 @@ impl<N: Network, E: Environment> Ledger<N, E> {
                     self.canon.latest_cumulative_weight(),
                     self.number_of_block_requests().await,
                     self.peers_state.read().await.len()
-                );
+                );*/
             }
             LedgerRequest::Pong(peer_ip, node_type, status, is_fork, block_locators) => {
                 // Ensure the peer has been initialized in the ledger.
