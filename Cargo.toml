@@ -116,7 +116,8 @@ features = [
     "rt-multi-thread",
     "signal",
     "sync",
-    "time"
+    "time",
+    "tracing",
 ]
 
 [dependencies.tokio-util]
@@ -132,6 +133,9 @@ version = "0.1"
 [dependencies.tracing-subscriber]
 version = "0.3"
 features = ["env-filter", "parking_lot"]
+
+[dependencies.console-subscriber]
+version = "0.1.0"
 
 [dev-dependencies.rand_chacha]
 version = "0.3"
