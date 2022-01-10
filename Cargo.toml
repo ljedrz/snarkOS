@@ -24,7 +24,7 @@ default = []
 test = []
 
 [dependencies]
-snarkvm = { git = "https://github.com/AleoHQ/snarkVM.git", rev = "2af7756" }
+snarkvm = { git = "https://github.com/ljedrz/snarkVM", branch = "testnet2_operator_alloc_fix" }
 #snarkvm = { path = "../snarkVM" }
 
 bytes = "1.0.0"

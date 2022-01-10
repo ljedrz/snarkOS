@@ -1326,9 +1326,9 @@ dependencies = [
 
 [[package]]
 name = "openssl-probe"
-version = "0.1.4"
+version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "28988d872ab76095a6e6ac88d99b54fd267702734fd7ffe610ca27f533ddb95a"
+checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 
 [[package]]
 name = "openssl-sys"
@@ -1939,7 +1939,7 @@ dependencies = [
  "serde",
  "serde_json",
  "snarkos-storage",
- "snarkvm",
+ "snarkvm 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
  "structopt",
  "tempfile",
  "thiserror",
@@ -1966,7 +1966,7 @@ dependencies = [
  "rocksdb",
  "serde",
  "serde_json",
- "snarkvm",
+ "snarkvm 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
  "tempfile",
  "tracing",
 ]
@@ -1983,7 +1983,7 @@ dependencies = [
  "rand",
  "snarkos",
  "snarkos-storage",
- "snarkvm",
+ "snarkvm 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
  "structopt",
  "tokio",
  "tracing",
@@ -1993,10 +1993,48 @@ dependencies = [
 [[package]]
 name = "snarkvm"
 version = "0.7.5"
+source = "git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix#a7b3b2ff3c8b1f820b531c3d9e7b1bffa5fea494"
+dependencies = [
+ "snarkvm-dpc 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+]
+
+[[package]]
+name = "snarkvm"
+version = "0.7.5"
 source = "git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756#2af7756c030eac9fcf7443a6682f3f62628d443f"
 dependencies = [
- "snarkvm-dpc",
- "snarkvm-utilities",
+ "snarkvm-dpc 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+]
+
+[[package]]
+name = "snarkvm-algorithms"
+version = "0.7.5"
+source = "git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix#a7b3b2ff3c8b1f820b531c3d9e7b1bffa5fea494"
+dependencies = [
+ "anyhow",
+ "blake2",
+ "blake2s_simd",
+ "crossbeam-channel",
+ "derivative",
+ "digest 0.9.0",
+ "hex",
+ "itertools",
+ "lazy_static",
+ "once_cell",
+ "rand",
+ "rand_chacha",
+ "rayon",
+ "serde",
+ "sha2",
+ "smallvec",
+ "snarkvm-curves 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-fields 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-profiler 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-r1cs 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "thiserror",
 ]
 
 [[package]]
@@ -2020,11 +2058,25 @@ dependencies = [
  "serde",
  "sha2",
  "smallvec",
- "snarkvm-curves",
- "snarkvm-fields",
- "snarkvm-profiler",
- "snarkvm-r1cs",
- "snarkvm-utilities",
+ "snarkvm-curves 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-fields 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-profiler 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-r1cs 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "thiserror",
+]
+
+[[package]]
+name = "snarkvm-curves"
+version = "0.7.5"
+source = "git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix#a7b3b2ff3c8b1f820b531c3d9e7b1bffa5fea494"
+dependencies = [
+ "derivative",
+ "rand",
+ "rustc_version",
+ "serde",
+ "snarkvm-fields 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
  "thiserror",
 ]
 
@@ -2037,9 +2089,21 @@ dependencies = [
  "rand",
  "rustc_version",
  "serde",
- "snarkvm-fields",
- "snarkvm-utilities",
+ "snarkvm-fields 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
  "thiserror",
+]
+
+[[package]]
+name = "snarkvm-derives"
+version = "0.7.5"
+source = "git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix#a7b3b2ff3c8b1f820b531c3d9e7b1bffa5fea494"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro-error",
+ "proc-macro2 1.0.36",
+ "quote 1.0.14",
+ "syn 1.0.85",
 ]
 
 [[package]]
@@ -2052,6 +2116,38 @@ dependencies = [
  "proc-macro2 1.0.36",
  "quote 1.0.14",
  "syn 1.0.85",
+]
+
+[[package]]
+name = "snarkvm-dpc"
+version = "0.7.5"
+source = "git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix#a7b3b2ff3c8b1f820b531c3d9e7b1bffa5fea494"
+dependencies = [
+ "anyhow",
+ "base58",
+ "bech32",
+ "bincode",
+ "blake2",
+ "chrono",
+ "derivative",
+ "hex",
+ "itertools",
+ "once_cell",
+ "rand",
+ "rayon",
+ "serde",
+ "serde_json",
+ "snarkvm-algorithms 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-curves 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-fields 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-gadgets 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-marlin 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-parameters 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-polycommit 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-profiler 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-r1cs 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "thiserror",
 ]
 
 [[package]]
@@ -2073,16 +2169,29 @@ dependencies = [
  "rayon",
  "serde",
  "serde_json",
- "snarkvm-algorithms",
- "snarkvm-curves",
- "snarkvm-fields",
- "snarkvm-gadgets",
- "snarkvm-marlin",
- "snarkvm-parameters",
- "snarkvm-polycommit",
- "snarkvm-profiler",
- "snarkvm-r1cs",
- "snarkvm-utilities",
+ "snarkvm-algorithms 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-curves 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-fields 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-gadgets 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-marlin 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-parameters 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-polycommit 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-profiler 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-r1cs 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "thiserror",
+]
+
+[[package]]
+name = "snarkvm-fields"
+version = "0.7.5"
+source = "git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix#a7b3b2ff3c8b1f820b531c3d9e7b1bffa5fea494"
+dependencies = [
+ "anyhow",
+ "derivative",
+ "rand",
+ "serde",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
  "thiserror",
 ]
 
@@ -2095,7 +2204,27 @@ dependencies = [
  "derivative",
  "rand",
  "serde",
- "snarkvm-utilities",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "thiserror",
+]
+
+[[package]]
+name = "snarkvm-gadgets"
+version = "0.7.5"
+source = "git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix#a7b3b2ff3c8b1f820b531c3d9e7b1bffa5fea494"
+dependencies = [
+ "anyhow",
+ "derivative",
+ "digest 0.9.0",
+ "itertools",
+ "num-bigint",
+ "num-integer",
+ "num-traits",
+ "snarkvm-algorithms 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-curves 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-fields 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-r1cs 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
  "thiserror",
 ]
 
@@ -2111,12 +2240,38 @@ dependencies = [
  "num-bigint",
  "num-integer",
  "num-traits",
- "snarkvm-algorithms",
- "snarkvm-curves",
- "snarkvm-fields",
- "snarkvm-r1cs",
- "snarkvm-utilities",
+ "snarkvm-algorithms 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-curves 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-fields 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-r1cs 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
  "thiserror",
+]
+
+[[package]]
+name = "snarkvm-marlin"
+version = "0.7.5"
+source = "git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix#a7b3b2ff3c8b1f820b531c3d9e7b1bffa5fea494"
+dependencies = [
+ "bincode",
+ "blake2",
+ "derivative",
+ "digest 0.9.0",
+ "hashbrown",
+ "rand",
+ "rand_chacha",
+ "rand_core",
+ "rayon",
+ "serde",
+ "smallvec",
+ "snarkvm-algorithms 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-curves 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-fields 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-gadgets 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-polycommit 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-profiler 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-r1cs 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
 ]
 
 [[package]]
@@ -2135,14 +2290,31 @@ dependencies = [
  "rayon",
  "serde",
  "smallvec",
- "snarkvm-algorithms",
- "snarkvm-curves",
- "snarkvm-fields",
- "snarkvm-gadgets",
- "snarkvm-polycommit",
- "snarkvm-profiler",
- "snarkvm-r1cs",
- "snarkvm-utilities",
+ "snarkvm-algorithms 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-curves 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-fields 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-gadgets 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-polycommit 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-profiler 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-r1cs 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+]
+
+[[package]]
+name = "snarkvm-parameters"
+version = "0.7.5"
+source = "git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix#a7b3b2ff3c8b1f820b531c3d9e7b1bffa5fea494"
+dependencies = [
+ "aleo-std",
+ "anyhow",
+ "cfg-if",
+ "curl",
+ "hex",
+ "paste",
+ "serde_json",
+ "snarkvm-algorithms 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "thiserror",
 ]
 
 [[package]]
@@ -2157,9 +2329,27 @@ dependencies = [
  "hex",
  "paste",
  "serde_json",
- "snarkvm-algorithms",
- "snarkvm-utilities",
+ "snarkvm-algorithms 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
  "thiserror",
+]
+
+[[package]]
+name = "snarkvm-polycommit"
+version = "0.7.5"
+source = "git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix#a7b3b2ff3c8b1f820b531c3d9e7b1bffa5fea494"
+dependencies = [
+ "derivative",
+ "digest 0.9.0",
+ "hashbrown",
+ "rand_core",
+ "snarkvm-algorithms 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-curves 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-fields 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-gadgets 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-profiler 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-r1cs 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
 ]
 
 [[package]]
@@ -2171,19 +2361,40 @@ dependencies = [
  "digest 0.9.0",
  "hashbrown",
  "rand_core",
- "snarkvm-algorithms",
- "snarkvm-curves",
- "snarkvm-fields",
- "snarkvm-gadgets",
- "snarkvm-profiler",
- "snarkvm-r1cs",
- "snarkvm-utilities",
+ "snarkvm-algorithms 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-curves 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-fields 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-gadgets 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-profiler 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-r1cs 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
 ]
 
 [[package]]
 name = "snarkvm-profiler"
 version = "0.7.5"
+source = "git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix#a7b3b2ff3c8b1f820b531c3d9e7b1bffa5fea494"
+
+[[package]]
+name = "snarkvm-profiler"
+version = "0.7.5"
 source = "git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756#2af7756c030eac9fcf7443a6682f3f62628d443f"
+
+[[package]]
+name = "snarkvm-r1cs"
+version = "0.7.5"
+source = "git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix#a7b3b2ff3c8b1f820b531c3d9e7b1bffa5fea494"
+dependencies = [
+ "anyhow",
+ "cfg-if",
+ "fxhash",
+ "indexmap",
+ "itertools",
+ "snarkvm-curves 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-fields 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
+ "thiserror",
+]
 
 [[package]]
 name = "snarkvm-r1cs"
@@ -2195,9 +2406,23 @@ dependencies = [
  "fxhash",
  "indexmap",
  "itertools",
- "snarkvm-curves",
- "snarkvm-fields",
- "snarkvm-utilities",
+ "snarkvm-curves 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-fields 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "snarkvm-utilities 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
+ "thiserror",
+]
+
+[[package]]
+name = "snarkvm-utilities"
+version = "0.7.5"
+source = "git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix#a7b3b2ff3c8b1f820b531c3d9e7b1bffa5fea494"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "num-bigint",
+ "rand",
+ "serde",
+ "snarkvm-derives 0.7.5 (git+https://github.com/ljedrz/snarkVM?branch=testnet2_operator_alloc_fix)",
  "thiserror",
 ]
 
@@ -2211,7 +2436,7 @@ dependencies = [
  "num-bigint",
  "rand",
  "serde",
- "snarkvm-derives",
+ "snarkvm-derives 0.7.5 (git+https://github.com/AleoHQ/snarkVM.git?rev=2af7756)",
  "thiserror",
 ]
 
