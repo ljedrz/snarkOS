@@ -27,7 +27,7 @@ use crate::{
     ProverRouter,
 };
 use snarkos_environment::{
-    helpers::{NodeType, State, Status},
+    helpers::{NodeType, Status},
     network::{Data, DisconnectReason, Message, MessageCodec},
     Environment,
 };
@@ -226,7 +226,7 @@ impl<N: Network, E: Environment> Peer<N, E> {
                         // If this node is a sync node, the peer is not a sync node and is syncing, and the peer is ahead, proceed to disconnect.
                         if E::NODE_TYPE == NodeType::Sync
                             && node_type != NodeType::Sync
-                            && peer_status == State::Syncing
+                            && peer_status == Status::Syncing
                             && peer_cumulative_weight > local_cumulative_weight
                         {
                             // Send the disconnect message.
@@ -264,11 +264,7 @@ impl<N: Network, E: Environment> Peer<N, E> {
                         trace!("Sending '{}-B' to {}", message.name(), peer_ip);
                         outbound_socket.send(message).await?;
 
-                        // Initialize a status variable.
-                        let status = Status::new();
-                        status.update(peer_status);
-
-                        (peer_nonce, node_type, status)
+                        (peer_nonce, node_type, peer_status)
                     }
                     Message::Disconnect(reason) => {
                         bail!("Peer {} disconnected for the following reason: {:?}", peer_ip, reason);
@@ -582,7 +578,7 @@ impl<N: Network, E: Environment> Peer<N, E> {
                                     // Update the node type of the peer.
                                     peer.node_type = node_type;
                                     // Update the status of the peer.
-                                    peer.status.update(status);
+                                    peer.status = status;
 
                                     // Determine if the peer is on a fork (or unknown).
                                     let is_fork = match ledger_reader.get_block_hash(peer.block_height) {
@@ -598,7 +594,7 @@ impl<N: Network, E: Environment> Peer<N, E> {
                                     // Perform the deferred non-blocking deserialization of block locators.
                                     let request = match block_locators.deserialize().await {
                                         // Route the `Pong` to the ledger.
-                                        Ok(block_locators) => LedgerRequest::Pong(peer_ip, peer.node_type, peer.status.get(), is_fork, block_locators),
+                                        Ok(block_locators) => LedgerRequest::Pong(peer_ip, peer.node_type, peer.status, is_fork, block_locators),
                                         // Route the `Failure` to the ledger.
                                         Err(error) => LedgerRequest::Failure(peer_ip, format!("{}", error)),
                                     };
