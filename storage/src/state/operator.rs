@@ -14,7 +14,7 @@
 // You should have received a copy of the GNU General Public License
 // along with the snarkOS library. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::storage::{DataMap, Map, MapId, Storage};
+use crate::storage::{DataMap, MapId, MapReadOnly, MapReadWrite, ReadWrite, Storage, StorageWritability};
 use snarkvm::dpc::prelude::*;
 
 use anyhow::{anyhow, Result};
@@ -25,19 +25,18 @@ use std::{
 };
 
 #[derive(Debug)]
-pub struct OperatorState<N: Network> {
-    shares: SharesState<N>,
+pub struct OperatorState<N: Network, T: StorageWritability> {
+    shares: SharesState<N, T>,
 }
 
-impl<N: Network> OperatorState<N> {
+impl<N: Network> OperatorState<N, ReadWrite> {
     ///
     /// Opens a new writable instance of `OperatorState` from the given storage path.
     ///
-    pub fn open_writer<S: Storage, P: AsRef<Path>>(path: P) -> Result<Self> {
+    pub fn open_writer<S: Storage<Writability = ReadWrite>, P: AsRef<Path>>(path: P) -> Result<Self> {
         // Open storage.
         let context = N::NETWORK_ID;
-        let is_read_only = false;
-        let storage = S::open(path, context, is_read_only)?;
+        let storage = S::open(path, context)?;
 
         // Initialize the operator.
         let operator = Self {
@@ -86,14 +85,14 @@ impl<N: Network> OperatorState<N> {
 
 #[derive(Clone, Debug)]
 #[allow(clippy::type_complexity)]
-struct SharesState<N: Network> {
+struct SharesState<N: Network, T: StorageWritability> {
     /// The miner shares for each block.
-    shares: DataMap<(u32, Record<N>), HashMap<Address<N>, u64>>,
+    shares: DataMap<(u32, Record<N>), HashMap<Address<N>, u64>, T>,
 }
 
-impl<N: Network> SharesState<N> {
+impl<N: Network> SharesState<N, ReadWrite> {
     /// Initializes a new instance of `SharesState`.
-    fn open<S: Storage>(storage: S) -> Result<Self> {
+    fn open<S: Storage<Writability = ReadWrite>>(storage: S) -> Result<Self> {
         Ok(Self {
             shares: storage.open_map(MapId::Shares)?,
         })

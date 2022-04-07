@@ -20,18 +20,40 @@ use anyhow::Result;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{borrow::Borrow, path::Path};
 
+pub trait StorageWritability: Send + Sync + 'static {}
+pub trait StorageReadOnly: StorageWritability {}
+pub trait StorageReadWrite: StorageWritability + StorageReadOnly {}
+
+#[derive(Clone, Copy)]
+pub struct ReadOnly;
+#[derive(Clone, Copy)]
+pub struct ReadWrite;
+
+impl StorageWritability for ReadOnly {}
+impl StorageWritability for ReadWrite {}
+
+impl StorageReadOnly for ReadOnly {}
+impl StorageReadOnly for ReadWrite {}
+impl StorageReadWrite for ReadWrite {}
+
 pub trait Storage {
+    /// TODO
+    type Writability: StorageWritability;
+
     ///
     /// Opens storage at the given `path` and `context`.
     ///
-    fn open<P: AsRef<Path>>(path: P, context: u16, is_read_only: bool) -> Result<Self>
+    fn open<P: AsRef<Path>>(path: P, context: u16) -> Result<Self>
     where
         Self: Sized;
 
     ///
     /// Opens a map with the given `context` from storage.
     ///
-    fn open_map<K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwned>(&self, map_id: MapId) -> Result<DataMap<K, V>>;
+    fn open_map<K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwned>(
+        &self,
+        map_id: MapId,
+    ) -> Result<DataMap<K, V, Self::Writability>>;
 
     ///
     /// Imports a file with the given path to reconstruct storage.
@@ -44,7 +66,7 @@ pub trait Storage {
     fn export<P: AsRef<Path>>(&self, path: P) -> Result<()>;
 }
 
-pub trait Map<'a, K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwned> {
+pub trait MapReadOnly<'a, K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwned> {
     type Iterator: Iterator<Item = (K, V)>;
     type Keys: Iterator<Item = K>;
     type Values: Iterator<Item = V>;
@@ -66,6 +88,30 @@ pub trait Map<'a, K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwn
         Q: Serialize + ?Sized;
 
     ///
+    /// Returns an iterator visiting each key-value pair in the map.
+    ///
+    fn iter(&'a self) -> Self::Iterator;
+
+    ///
+    /// Returns an iterator over each key in the map.
+    ///
+    fn keys(&'a self) -> Self::Keys;
+
+    ///
+    /// Returns an iterator over each value in the map.
+    ///
+    fn values(&'a self) -> Self::Values;
+
+    ///
+    /// Performs a refresh operation for implementations of `Map` that perform periodic operations.
+    /// This method is implemented here for RocksDB to catch up a reader (secondary) database.
+    /// Returns `true` if the sequence number of the database has increased.
+    ///
+    fn refresh(&self) -> bool;
+}
+
+pub trait MapReadWrite<'a, K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwned>: MapReadOnly<'a, K, V> {
+    ///
     /// Inserts the given key-value pair into the map. Can be paired with a numeric
     /// batch id, which defers the operation until `execute_batch` is called using
     /// the same id.
@@ -84,30 +130,6 @@ pub trait Map<'a, K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwn
     where
         K: Borrow<Q>,
         Q: Serialize + ?Sized;
-
-    ///
-    /// Returns an iterator visiting each key-value pair in the map.
-    ///
-    fn iter(&'a self) -> Self::Iterator;
-
-    ///
-    /// Returns an iterator over each key in the map.
-    ///
-    fn keys(&'a self) -> Self::Keys;
-
-    ///
-    /// Returns an iterator over each value in the map.
-    ///
-    fn values(&'a self) -> Self::Values;
-
-    ///
-    /// Performs a refresh operation for implementations of `Map` that perform periodic operations.
-    /// Returns `true` if the database state has been updated.
-    ///
-    fn refresh(&self) -> bool {
-        // Currently, this method is implemented for RocksDB to catch up a reader (secondary) database.
-        true
-    }
 
     ///
     /// Prepares an atomic batch of writes and returns its numeric id which can later be used to include

@@ -29,7 +29,7 @@ use values::*;
 #[cfg(test)]
 mod tests;
 
-use crate::storage::{Map, Storage};
+use crate::storage::{MapReadOnly, MapReadWrite, ReadOnly, ReadWrite, Storage, StorageReadOnly, StorageWritability};
 
 use anyhow::Result;
 use parking_lot::Mutex;
@@ -49,18 +49,23 @@ use std::{
 /// An instance of a RocksDB database.
 ///
 #[derive(Clone)]
-pub struct RocksDB {
+pub struct RocksDB<T: StorageWritability> {
     rocksdb: Arc<rocksdb::DB>,
     context: Vec<u8>,
     batches: Arc<Mutex<HashMap<usize, rocksdb::WriteBatch>>>,
-    is_read_only: bool,
+    _phantom: PhantomData<T>,
 }
 
-impl Storage for RocksDB {
+impl<T: StorageWritability> StorageWritability for RocksDB<T> {}
+impl<T: StorageReadOnly> StorageReadOnly for RocksDB<T> {}
+
+impl Storage for RocksDB<ReadWrite> {
+    type Writability = ReadWrite;
+
     ///
     /// Opens storage at the given `path` and `context`.
     ///
-    fn open<P: AsRef<Path>>(path: P, context: u16, is_read_only: bool) -> Result<Self> {
+    fn open<P: AsRef<Path>>(path: P, context: u16) -> Result<Self> {
         let context = context.to_le_bytes().to_vec();
 
         // Customize database options.
@@ -72,33 +77,27 @@ impl Storage for RocksDB {
         options.set_prefix_extractor(prefix_extractor);
 
         let primary = path.as_ref().to_path_buf();
-        let rocksdb = match is_read_only {
-            true => {
-                // Construct the directory paths.
-                let reader = path.as_ref().join("reader");
-                // Open a secondary reader for the primary rocksdb.
-                let rocksdb = rocksdb::DB::open_as_secondary(&options, &primary, &reader)?;
-                Arc::new(rocksdb)
-            }
-            false => {
-                options.increase_parallelism(2);
-                options.create_if_missing(true);
-                Arc::new(rocksdb::DB::open(&options, &primary)?)
-            }
+        let rocksdb = {
+            options.increase_parallelism(2);
+            options.create_if_missing(true);
+            Arc::new(rocksdb::DB::open(&options, &primary)?)
         };
 
         Ok(RocksDB {
             rocksdb,
             context,
             batches: Default::default(),
-            is_read_only,
+            _phantom: Default::default(),
         })
     }
 
     ///
     /// Opens a map with the given `context` from storage.
     ///
-    fn open_map<K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwned>(&self, map_id: MapId) -> Result<DataMap<K, V>> {
+    fn open_map<K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwned>(
+        &self,
+        map_id: MapId,
+    ) -> Result<DataMap<K, V, ReadWrite>> {
         // Convert the new context into bytes.
         let new_context = (map_id as u16).to_le_bytes();
 
@@ -146,6 +145,91 @@ impl Storage for RocksDB {
         }
 
         Ok(())
+    }
+
+    ///
+    /// Exports the current state of storage to a single file at the specified location.
+    ///
+    fn export<P: AsRef<Path>>(&self, path: P) -> Result<()> {
+        let file = File::create(path)?;
+        let mut writer = BufWriter::new(file);
+
+        let mut iterator = self.rocksdb.raw_iterator();
+        iterator.seek_to_first();
+
+        while iterator.valid() {
+            if let (Some(key), Some(value)) = (iterator.key(), iterator.value()) {
+                writer.write_all(&(key.len() as u32).to_le_bytes())?;
+                writer.write_all(key)?;
+
+                writer.write_all(&(value.len() as u32).to_le_bytes())?;
+                writer.write_all(value)?;
+            }
+            iterator.next();
+        }
+
+        Ok(())
+    }
+}
+
+impl Storage for RocksDB<ReadOnly> {
+    /// TODO
+    type Writability = ReadOnly;
+
+    ///
+    /// Opens storage at the given `path` and `context`.
+    ///
+    fn open<P: AsRef<Path>>(path: P, context: u16) -> Result<Self> {
+        let context = context.to_le_bytes().to_vec();
+
+        // Customize database options.
+        let mut options = rocksdb::Options::default();
+        options.set_compression_type(rocksdb::DBCompressionType::Lz4);
+
+        // Register the prefix length.
+        let prefix_extractor = rocksdb::SliceTransform::create_fixed_prefix(PREFIX_LEN);
+        options.set_prefix_extractor(prefix_extractor);
+
+        let primary = path.as_ref().to_path_buf();
+        let rocksdb = {
+            // Construct the directory paths.
+            let reader = path.as_ref().join("reader");
+            // Open a secondary reader for the primary rocksdb.
+            let rocksdb = rocksdb::DB::open_as_secondary(&options, &primary, &reader)?;
+            Arc::new(rocksdb)
+        };
+
+        Ok(RocksDB {
+            rocksdb,
+            context,
+            batches: Default::default(),
+            _phantom: Default::default(),
+        })
+    }
+
+    ///
+    /// Opens a map with the given `context` from storage.
+    ///
+    fn open_map<K: Serialize + DeserializeOwned, V: Serialize + DeserializeOwned>(&self, map_id: MapId) -> Result<DataMap<K, V, ReadOnly>> {
+        // Convert the new context into bytes.
+        let new_context = (map_id as u16).to_le_bytes();
+
+        // Combine contexts to create a new scope.
+        let mut context_bytes = self.context.clone();
+        context_bytes.extend_from_slice(&new_context);
+
+        Ok(DataMap {
+            storage: self.clone(),
+            context: context_bytes,
+            _phantom: PhantomData,
+        })
+    }
+
+    ///
+    /// Imports a file with the given path to reconstruct storage.
+    ///
+    fn import<P: AsRef<Path>>(&self, _path: P) -> Result<()> {
+        panic!("Can't import into a read-only storage!");
     }
 
     ///

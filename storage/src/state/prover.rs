@@ -14,30 +14,30 @@
 // You should have received a copy of the GNU General Public License
 // along with the snarkOS library. If not, see <https://www.gnu.org/licenses/>.
 
-use crate::storage::{DataMap, Map, MapId, Storage};
+use crate::storage::{DataMap, MapId, MapReadOnly, MapReadWrite, Storage, StorageReadOnly, StorageReadWrite, StorageWritability};
 use snarkvm::dpc::prelude::*;
 
 use anyhow::{anyhow, Result};
 use std::path::Path;
 
 #[derive(Debug)]
-pub struct ProverState<N: Network> {
+pub struct ProverState<N: Network, T: StorageWritability> {
     /// The coinbase records of the prover in storage.
-    coinbase: CoinbaseState<N>,
+    coinbase: CoinbaseState<N, T>,
 }
 
-impl<N: Network> ProverState<N> {
+impl<N: Network, T: StorageReadOnly> ProverState<N, T> {
     ///
     /// Opens a new instance of `ProverState` from the given storage path.
     ///
-    pub fn open<S: Storage, P: AsRef<Path>>(path: P, is_read_only: bool) -> Result<Self> {
+    pub fn open_ro<S: Storage<Writability = T>, P: AsRef<Path>>(path: P) -> Result<Self> {
         // Open storage.
         let context = N::NETWORK_ID;
-        let storage = S::open(path, context, is_read_only)?;
+        let storage = S::open(path, context)?;
 
         // Initialize the prover.
         let prover = Self {
-            coinbase: CoinbaseState::open(storage)?,
+            coinbase: CoinbaseState::open_ro(storage)?,
         };
 
         info!("Prover successfully initialized");
@@ -58,6 +58,25 @@ impl<N: Network> ProverState<N> {
     pub fn get_coinbase_record(&self, commitment: &N::Commitment) -> Result<(u32, Record<N>)> {
         self.coinbase.get_record(commitment)
     }
+}
+
+impl<N: Network, T: StorageReadWrite> ProverState<N, T> {
+    ///
+    /// Opens a new instance of `ProverState` from the given storage path.
+    ///
+    pub fn open_rw<S: Storage<Writability = T>, P: AsRef<Path>>(path: P) -> Result<Self> {
+        // Open storage.
+        let context = N::NETWORK_ID;
+        let storage = S::open(path, context)?;
+
+        // Initialize the prover.
+        let prover = Self {
+            coinbase: CoinbaseState::open_rw(storage)?,
+        };
+
+        info!("Prover successfully initialized");
+        Ok(prover)
+    }
 
     /// Adds the given coinbase record to storage.
     pub fn add_coinbase_record(&self, block_height: u32, record: Record<N>) -> Result<()> {
@@ -72,13 +91,13 @@ impl<N: Network> ProverState<N> {
 
 #[derive(Clone, Debug)]
 #[allow(clippy::type_complexity)]
-struct CoinbaseState<N: Network> {
-    records: DataMap<N::Commitment, (u32, Record<N>)>,
+struct CoinbaseState<N: Network, T: StorageWritability> {
+    records: DataMap<N::Commitment, (u32, Record<N>), T>,
 }
 
-impl<N: Network> CoinbaseState<N> {
+impl<N: Network, T: StorageReadOnly> CoinbaseState<N, T> {
     /// Initializes a new instance of `CoinbaseState`.
-    fn open<S: Storage>(storage: S) -> Result<Self> {
+    fn open_ro<S: Storage<Writability = T>>(storage: S) -> Result<Self> {
         Ok(Self {
             records: storage.open_map(MapId::Records)?,
         })
@@ -100,6 +119,15 @@ impl<N: Network> CoinbaseState<N> {
             Some((block_height, record)) => Ok((block_height, record)),
             None => return Err(anyhow!("Record with commitment {} does not exist in storage", commitment)),
         }
+    }
+}
+
+impl<N: Network, T: StorageReadWrite> CoinbaseState<N, T> {
+    /// Initializes a new instance of `CoinbaseState`.
+    fn open_rw<S: Storage<Writability = T>>(storage: S) -> Result<Self> {
+        Ok(Self {
+            records: storage.open_map(MapId::Records)?,
+        })
     }
 
     /// Adds the given block height and record to storage.
