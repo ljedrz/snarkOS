@@ -17,7 +17,10 @@
 use std::{net::SocketAddr, sync::Arc};
 
 use once_cell::race::OnceBox;
-use snarkos_environment::{helpers::NodeType, Environment};
+use snarkos_environment::{
+    helpers::{NodeType, NodeTypeId},
+    Environment,
+};
 use snarkvm::prelude::*;
 use tokio::sync::oneshot;
 
@@ -134,7 +137,7 @@ impl<N: Network, E: Environment> State<N, E> {
     pub async fn initialize_operator(self: &Arc<Self>, operator: Operator<N, E>, mut operator_handler: OperatorHandler<N>) {
         self.operator.set(operator.into()).map_err(|_| ()).unwrap();
 
-        if E::NODE_TYPE == NodeType::Operator {
+        if E::NodeType::id() == NodeTypeId::Operator {
             // Initialize the handler for the operator.
             let state = self.clone();
             let (router, handler) = oneshot::channel();

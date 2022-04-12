@@ -15,7 +15,7 @@
 // along with the snarkOS library. If not, see <https://www.gnu.org/licenses/>.
 
 use snarkos_environment::{
-    helpers::{BlockLocators, NodeType, Status},
+    helpers::{node_type, BlockLocators, NodeType, Status},
     network::{Data, MessageCodec},
     Client,
     CurrentNetwork,
@@ -96,7 +96,7 @@ impl TestNode {
             let ping_msg = ClientMessage::Ping(
                 MESSAGE_VERSION,
                 MAXIMUM_FORK_DEPTH,
-                NodeType::Client,
+                NodeTypeId::Client,
                 Status::Ready,
                 genesis.hash(),
                 Data::Object(genesis.header().clone()),

@@ -21,7 +21,7 @@ use crate::{
     State,
 };
 use snarkos_environment::{
-    helpers::{block_locators::*, NodeType, Status},
+    helpers::{block_locators::*, NodeType, NodeTypeId, Status},
     network::{Data, DisconnectReason, Message},
     Environment,
 };
@@ -69,12 +69,12 @@ pub enum LedgerRequest<N: Network> {
     /// Heartbeat
     Heartbeat,
     /// Pong := (peer_ip, node_type, status, is_fork, block_locators)
-    Pong(SocketAddr, NodeType, Status, Option<bool>, BlockLocators<N>),
+    Pong(SocketAddr, NodeTypeId, Status, Option<bool>, BlockLocators<N>),
     /// UnconfirmedBlock := (peer_ip, block, prover_router)
     UnconfirmedBlock(SocketAddr, Block<N>),
 }
 
-pub type PeersState<N> = HashMap<SocketAddr, Option<(NodeType, Status, Option<bool>, u32, BlockLocators<N>)>>;
+pub type PeersState<N> = HashMap<SocketAddr, Option<(NodeTypeId, Status, Option<bool>, u32, BlockLocators<N>)>>;
 
 ///
 /// A ledger for a specific network on the node server.
@@ -217,7 +217,7 @@ impl<N: Network, E: Environment> Ledger<N, E> {
 
                 debug!(
                     "Status Report (type = {}, status = {}, block_height = {}, cumulative_weight = {}, block_requests = {}, connected_peers = {})",
-                    E::NODE_TYPE,
+                    E::NodeType::description(),
                     E::status(),
                     self.canon.latest_block_height(),
                     self.canon.latest_cumulative_weight(),
@@ -301,7 +301,7 @@ impl<N: Network, E: Environment> Ledger<N, E> {
     /// Performs a heartbeat update for the sync nodes.
     ///
     async fn update_sync_nodes(&self) {
-        if E::NODE_TYPE == NodeType::Sync {
+        if E::NodeType::id() == NodeTypeId::Sync {
             // Lock peers_state for further processing.
             let peers_state = self.peers_state.read().await;
 
@@ -321,7 +321,7 @@ impl<N: Network, E: Environment> Ledger<N, E> {
                     };
 
                     // If the peer is not a sync node and is syncing, and the peer is ahead, proceed to disconnect.
-                    if *node_type != NodeType::Sync && *status == Status::Syncing && cumulative_weight > latest_cumulative_weight {
+                    if *node_type != NodeTypeId::Sync && *status == Status::Syncing && cumulative_weight > latest_cumulative_weight {
                         // Append the peer to the list of disconnects.
                         peer_ips_to_disconnect.push(*peer_ip);
                     }
@@ -619,7 +619,7 @@ impl<N: Network, E: Environment> Ledger<N, E> {
     async fn update_peer(
         &self,
         peer_ip: SocketAddr,
-        node_type: NodeType,
+        node_type: NodeTypeId,
         status: Status,
         is_fork: Option<bool>,
         block_locators: BlockLocators<N>,

@@ -16,7 +16,7 @@
 
 use crate::{ConnectionResult, LedgerRequest, OperatorRequest, PeersRequest, ProverRequest, State};
 use snarkos_environment::{
-    helpers::{NodeType, Status},
+    helpers::{NodeType, NodeTypeId, Status},
     network::{Data, DisconnectReason, Message, MessageCodec},
     Environment,
 };
@@ -48,7 +48,7 @@ pub(crate) struct Peer<N: Network, E: Environment> {
     /// The message version of the peer.
     version: u32,
     /// The node type of the peer.
-    node_type: NodeType,
+    node_type: NodeTypeId,
     /// The node type of the peer.
     status: Status,
     /// The block height of the peer.
@@ -92,7 +92,7 @@ impl<N: Network, E: Environment> Peer<N, E> {
         let message = Message::Ping(
             E::MESSAGE_VERSION,
             N::ALEO_MAXIMUM_FORK_DEPTH,
-            E::NODE_TYPE,
+            E::NodeType::id(),
             E::status().get(),
             ledger_reader.latest_block_hash(),
             Data::Object(ledger_reader.latest_block_header()),
@@ -145,7 +145,7 @@ impl<N: Network, E: Environment> Peer<N, E> {
         local_nonce: u64,
         local_cumulative_weight: u128,
         connected_nonces: &[u64],
-    ) -> Result<(SocketAddr, u64, NodeType, Status)> {
+    ) -> Result<(SocketAddr, u64, NodeTypeId, Status)> {
         // Get the IP address of the peer.
         let mut peer_ip = outbound_socket.get_ref().peer_addr()?;
 
@@ -156,7 +156,7 @@ impl<N: Network, E: Environment> Peer<N, E> {
         let message = Message::<N, E>::ChallengeRequest(
             E::MESSAGE_VERSION,
             N::ALEO_MAXIMUM_FORK_DEPTH,
-            E::NODE_TYPE,
+            E::NodeType::id(),
             E::status().get(),
             local_ip.port(),
             local_nonce,
@@ -199,9 +199,9 @@ impl<N: Network, E: Environment> Peer<N, E> {
                             bail!("Dropping {} for an incorrect maximum fork depth of {}", peer_ip, fork_depth);
                         }
                         // If this node is not a sync node and is syncing, the peer is a sync node, and this node is ahead, proceed to disconnect.
-                        if E::NODE_TYPE != NodeType::Sync
+                        if E::NodeType::id() != NodeTypeId::Sync
                             && E::status().is_syncing()
-                            && node_type == NodeType::Sync
+                            && node_type == NodeTypeId::Sync
                             && local_cumulative_weight > peer_cumulative_weight
                         {
                             // Send the disconnect message.
@@ -211,8 +211,8 @@ impl<N: Network, E: Environment> Peer<N, E> {
                             bail!("Dropping {} as this node is ahead", peer_ip);
                         }
                         // If this node is a sync node, the peer is not a sync node and is syncing, and the peer is ahead, proceed to disconnect.
-                        if E::NODE_TYPE == NodeType::Sync
-                            && node_type != NodeType::Sync
+                        if E::NodeType::id() == NodeTypeId::Sync
+                            && node_type != NodeTypeId::Sync
                             && peer_status == Status::Syncing
                             && peer_cumulative_weight > local_cumulative_weight
                         {
@@ -530,9 +530,9 @@ impl<N: Network, E: Environment> Peer<N, E> {
                                     match block_header.deserialize().await {
                                         Ok(block_header) => {
                                             // If this node is not a sync node and is syncing, the peer is a sync node, and this node is ahead, proceed to disconnect.
-                                            if E::NODE_TYPE != NodeType::Sync
+                                            if E::NodeType::id() != NodeTypeId::Sync
                                                 && E::status().is_syncing()
-                                                && node_type == NodeType::Sync
+                                                && node_type == NodeTypeId::Sync
                                                 && state.ledger().reader().latest_cumulative_weight() > block_header.cumulative_weight()
                                             {
                                                 trace!("Disconnecting from {} (ahead of sync node)", peer_ip);
@@ -600,7 +600,7 @@ impl<N: Network, E: Environment> Peer<N, E> {
                                         let latest_block_header = ledger_reader.latest_block_header();
 
                                         // Send a `Ping` request to the peer.
-                                        let message = Message::Ping(E::MESSAGE_VERSION, N::ALEO_MAXIMUM_FORK_DEPTH, E::NODE_TYPE, E::status().get(), latest_block_hash, Data::Object(latest_block_header));
+                                        let message = Message::Ping(E::MESSAGE_VERSION, N::ALEO_MAXIMUM_FORK_DEPTH, E::NodeType::id(), E::status().get(), latest_block_hash, Data::Object(latest_block_header));
                                         if let Err(error) = peers_router.send(PeersRequest::MessageSend(peer_ip, message)).await {
                                             warn!("[Ping] {}", error);
                                         }
@@ -639,7 +639,7 @@ impl<N: Network, E: Environment> Peer<N, E> {
                                     let is_node_ready = !E::status().is_peering();
 
                                     // If this node is a beacon or sync node, skip this message, after updating the timestamp.
-                                    if E::NODE_TYPE == NodeType::Beacon || E::NODE_TYPE == NodeType::Sync || !is_router_ready || !is_within_range || !is_node_ready {
+                                    if E::NodeType::id() == NodeTypeId::Beacon || E::NodeType::id() == NodeTypeId::Sync || !is_router_ready || !is_within_range || !is_node_ready {
                                         trace!("Skipping 'UnconfirmedBlock {}' from {}", block_height, peer_ip)
                                     } else {
                                         // Perform the deferred non-blocking deserialization of the block.
@@ -688,7 +688,7 @@ impl<N: Network, E: Environment> Peer<N, E> {
                                             let is_node_ready = !E::status().is_peering();
 
                                             // If this node is a beacon or sync node, skip this message, after updating the timestamp.
-                                            if E::NODE_TYPE == NodeType::Beacon || E::NODE_TYPE == NodeType::Sync || !is_router_ready || !is_node_ready {
+                                            if E::NodeType::id() == NodeTypeId::Beacon || E::NodeType::id() == NodeTypeId::Sync || !is_router_ready || !is_node_ready {
                                                 trace!("Skipping 'UnconfirmedTransaction {}' from {}", transaction.transaction_id(), peer_ip);
                                             } else {
                                                 // Route the `UnconfirmedTransaction` to the prover.
@@ -703,14 +703,14 @@ impl<N: Network, E: Environment> Peer<N, E> {
                                     }
                                 }
                                 Message::PoolRegister(address) => {
-                                    if E::NODE_TYPE != NodeType::Operator {
+                                    if E::NodeType::id() != NodeTypeId::Operator {
                                         trace!("Skipping 'PoolRegister' from {}", peer_ip);
                                     } else if let Err(error) = state.operator().router().send(OperatorRequest::PoolRegister(peer_ip, address)).await {
                                         warn!("[PoolRegister] {}", error);
                                     }
                                 }
                                 Message::PoolRequest(share_difficulty, block_template) => {
-                                    if E::NODE_TYPE != NodeType::Prover {
+                                    if E::NodeType::id() != NodeTypeId::Prover {
                                         trace!("Skipping 'PoolRequest' from {}", peer_ip);
                                     } else if let Ok(block_template) = block_template.deserialize().await {
                                         if let Err(error) = state.prover().router().send(ProverRequest::PoolRequest(peer_ip, share_difficulty, block_template)).await {
@@ -721,7 +721,7 @@ impl<N: Network, E: Environment> Peer<N, E> {
                                     }
                                 }
                                 Message::PoolResponse(address, nonce, proof) => {
-                                    if E::NODE_TYPE != NodeType::Operator {
+                                    if E::NodeType::id() != NodeTypeId::Operator {
                                         trace!("Skipping 'PoolResponse' from {}", peer_ip);
                                     } else if let Ok(proof) = proof.deserialize().await {
                                         if let Err(error) = state.operator().router().send(OperatorRequest::PoolResponse(peer_ip, address, nonce, proof)).await {

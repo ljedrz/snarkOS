@@ -23,7 +23,7 @@ pub mod helpers;
 #[cfg(feature = "network")]
 pub mod network;
 
-use crate::helpers::{NodeType, RawStatus, Resources};
+use crate::helpers::{node_type, NodeType, RawStatus, Resources};
 use snarkvm::dpc::Network;
 
 use once_cell::sync::OnceCell;
@@ -43,7 +43,7 @@ pub type CurrentNetwork = snarkvm::dpc::testnet2::Testnet2;
 pub trait Environment: 'static + Clone + Debug + Default + Send + Sync {
     type Network: Network;
     /// The specified type of node.
-    const NODE_TYPE: NodeType;
+    type NodeType: NodeType;
     /// The version of the network protocol; it can be incremented in order to force users to update.
     const MESSAGE_VERSION: u32 = 12;
     /// If `true`, a mining node will craft public coinbase transactions.
@@ -145,7 +145,7 @@ pub struct Client<N: Network>(PhantomData<N>);
 #[rustfmt::skip]
 impl<N: Network> Environment for Client<N> {
     type Network = N;
-    const NODE_TYPE: NodeType = NodeType::Client;
+    type NodeType = node_type::Client;
     const MINIMUM_NUMBER_OF_PEERS: usize = 2;
     const MAXIMUM_NUMBER_OF_PEERS: usize = 21;
 }
@@ -156,7 +156,7 @@ pub struct Miner<N: Network>(PhantomData<N>);
 #[rustfmt::skip]
 impl<N: Network> Environment for Miner<N> {
     type Network = N;
-    const NODE_TYPE: NodeType = NodeType::Miner;
+    type NodeType = node_type::Miner;
     const COINBASE_IS_PUBLIC: bool = true;
     const MINIMUM_NUMBER_OF_PEERS: usize = 1;
     const MAXIMUM_NUMBER_OF_PEERS: usize = 21;
@@ -168,7 +168,7 @@ pub struct Operator<N: Network>(PhantomData<N>);
 #[rustfmt::skip]
 impl<N: Network> Environment for Operator<N> {
     type Network = N;
-    const NODE_TYPE: NodeType = NodeType::Operator;
+    type NodeType = node_type::Operator;
     const COINBASE_IS_PUBLIC: bool = true;
     const MINIMUM_NUMBER_OF_PEERS: usize = 1;
     const MAXIMUM_NUMBER_OF_PEERS: usize = 1000;
@@ -180,7 +180,7 @@ pub struct Prover<N: Network>(PhantomData<N>);
 #[rustfmt::skip]
 impl<N: Network> Environment for Prover<N> {
     type Network = N;
-    const NODE_TYPE: NodeType = NodeType::Prover;
+    type NodeType = node_type::Prover;
     const COINBASE_IS_PUBLIC: bool = true;
     const MINIMUM_NUMBER_OF_PEERS: usize = 2;
     const MAXIMUM_NUMBER_OF_PEERS: usize = 21;
@@ -192,7 +192,7 @@ pub struct SyncNode<N: Network>(PhantomData<N>);
 #[rustfmt::skip]
 impl<N: Network> Environment for SyncNode<N> {
     type Network = N;
-    const NODE_TYPE: NodeType = NodeType::Sync;
+    type NodeType = node_type::Sync;
     const MINIMUM_NUMBER_OF_PEERS: usize = 35;
     const MAXIMUM_NUMBER_OF_PEERS: usize = 1024;
     const HEARTBEAT_IN_SECS: u64 = 5;
@@ -204,7 +204,7 @@ pub struct ClientTrial<N: Network>(PhantomData<N>);
 #[rustfmt::skip]
 impl<N: Network> Environment for ClientTrial<N> {
     type Network = N;
-    const NODE_TYPE: NodeType = NodeType::Client;
+    type NodeType = node_type::Client;
     const SYNC_NODES: &'static [&'static str] = &[
         "144.126.219.193:4132", "165.232.145.194:4132", "143.198.164.241:4132", "188.166.7.13:4132", "167.99.40.226:4132",
         "159.223.124.150:4132", "137.184.192.155:4132", "147.182.213.228:4132", "137.184.202.162:4132", "159.223.118.35:4132",
@@ -220,7 +220,7 @@ pub struct MinerTrial<N: Network>(PhantomData<N>);
 #[rustfmt::skip]
 impl<N: Network> Environment for MinerTrial<N> {
     type Network = N;
-    const NODE_TYPE: NodeType = NodeType::Miner;
+    type NodeType = node_type::Miner;
     const SYNC_NODES: &'static [&'static str] = &[
         "144.126.219.193:4132", "165.232.145.194:4132", "143.198.164.241:4132", "188.166.7.13:4132", "167.99.40.226:4132",
         "159.223.124.150:4132", "137.184.192.155:4132", "147.182.213.228:4132", "137.184.202.162:4132", "159.223.118.35:4132",
@@ -237,7 +237,7 @@ pub struct OperatorTrial<N: Network>(PhantomData<N>);
 #[rustfmt::skip]
 impl<N: Network> Environment for OperatorTrial<N> {
     type Network = N;
-    const NODE_TYPE: NodeType = NodeType::Operator;
+    type NodeType = node_type::Operator;
     const SYNC_NODES: &'static [&'static str] = &[
         "144.126.219.193:4132", "165.232.145.194:4132", "143.198.164.241:4132", "188.166.7.13:4132", "167.99.40.226:4132",
         "159.223.124.150:4132", "137.184.192.155:4132", "147.182.213.228:4132", "137.184.202.162:4132", "159.223.118.35:4132",
@@ -254,7 +254,7 @@ pub struct ProverTrial<N: Network>(PhantomData<N>);
 #[rustfmt::skip]
 impl<N: Network> Environment for ProverTrial<N> {
     type Network = N;
-    const NODE_TYPE: NodeType = NodeType::Prover;
+    type NodeType = node_type::Prover;
     const SYNC_NODES: &'static [&'static str] = &[
         "144.126.219.193:4132", "165.232.145.194:4132", "143.198.164.241:4132", "188.166.7.13:4132", "167.99.40.226:4132",
         "159.223.124.150:4132", "137.184.192.155:4132", "147.182.213.228:4132", "137.184.202.162:4132", "159.223.118.35:4132",

@@ -16,7 +16,7 @@
 
 use crate::{LedgerRequest, PeersRequest, State};
 use snarkos_environment::{
-    helpers::{NodeType, Status},
+    helpers::{NodeType, NodeTypeId, Status},
     network::{Data, Message},
     Environment,
 };
@@ -103,14 +103,14 @@ impl<N: Network, E: Environment> Prover<N, E> {
 
     pub async fn initialize_miner(&self) {
         // Initialize the miner, if the node type is a miner.
-        if E::NODE_TYPE == NodeType::Miner && self.pool.is_none() {
+        if E::NodeType::id() == NodeTypeId::Miner && self.pool.is_none() {
             self.state.prover().start_miner().await;
         }
     }
 
     pub async fn initialize_pooling(&self) {
         // Initialize the prover, if the node type is a prover.
-        if E::NODE_TYPE == NodeType::Prover && self.pool.is_some() {
+        if E::NodeType::id() == NodeTypeId::Prover && self.pool.is_some() {
             let state = self.state.clone();
             let (router, handler) = oneshot::channel();
             E::resources().register_task(
@@ -211,7 +211,7 @@ impl<N: Network, E: Environment> Prover<N, E> {
     /// Sends a `PoolRegister` message to the pool IP address.
     ///
     pub async fn send_pool_register(&self) {
-        if E::NODE_TYPE == NodeType::Prover {
+        if E::NodeType::id() == NodeTypeId::Prover {
             if let Some(recipient) = self.address {
                 if let Some(pool_ip) = self.pool {
                     // Proceed to register the prover to receive a block template.
@@ -232,7 +232,7 @@ impl<N: Network, E: Environment> Prover<N, E> {
     /// Processes a `PoolRequest` message from a pool operator.
     ///
     async fn process_pool_request(&self, operator_ip: SocketAddr, share_difficulty: u64, block_template: BlockTemplate<N>) {
-        if E::NODE_TYPE == NodeType::Prover {
+        if E::NodeType::id() == NodeTypeId::Prover {
             if let Some(recipient) = self.address {
                 if let Some(pool_ip) = self.pool {
                     // Refuse work from any pool other than the registered one.
@@ -333,7 +333,7 @@ impl<N: Network, E: Environment> Prover<N, E> {
     ///
     pub async fn start_miner(&self) {
         // Initialize a new instance of the miner.
-        if E::NODE_TYPE == NodeType::Miner && self.pool.is_none() {
+        if E::NodeType::id() == NodeTypeId::Miner && self.pool.is_none() {
             if let Some(recipient) = self.address {
                 // Initialize the prover process.
                 let (router, handler) = oneshot::channel();

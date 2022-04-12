@@ -16,7 +16,7 @@
 
 use crate::{LedgerRequest, PeersRequest, State};
 use snarkos_environment::{
-    helpers::NodeType,
+    helpers::{NodeType, NodeTypeId},
     network::{Data, Message},
     Environment,
 };
@@ -95,7 +95,7 @@ impl<N: Network, E: Environment> Operator<N, E> {
     }
 
     pub async fn initialize(&self) {
-        if E::NODE_TYPE == NodeType::Operator {
+        if E::NodeType::id() == NodeTypeId::Operator {
             if let Some(recipient) = self.state.prover().address {
                 // Initialize an update loop for the block template.
                 let state = self.state.clone();

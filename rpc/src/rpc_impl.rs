@@ -19,7 +19,7 @@
 //! See [RpcFunctions](../trait.RpcFunctions.html) for documentation of public endpoints.
 
 use crate::{RpcContext, RpcError, RpcFunctions};
-use snarkos_environment::Environment;
+use snarkos_environment::{helpers::NodeType, Environment};
 use snarkos_network::ProverRequest;
 use snarkvm::{
     dpc::{Address, AleoAmount, Block, BlockHeader, Blocks, Network, Record, Transaction, Transactions, Transition},
@@ -242,7 +242,7 @@ impl<N: Network, E: Environment> RpcFunctions<N> for RpcContext<N, E> {
             "number_of_connected_sync_nodes": number_of_connected_sync_nodes,
             "software": format!("snarkOS {}", env!("CARGO_PKG_VERSION")),
             "status": E::status().to_string(),
-            "type": E::NODE_TYPE,
+            "type": E::NodeType::id(),
             "version": E::MESSAGE_VERSION,
         }))
     }

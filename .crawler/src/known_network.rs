@@ -15,7 +15,7 @@
 // along with the snarkOS library. If not, see <https://www.gnu.org/licenses/>.
 
 use parking_lot::RwLock;
-use snarkos_environment::helpers::{NodeType, Status};
+use snarkos_environment::helpers::{NodeTypeId, Status};
 use std::{
     collections::{HashMap, HashSet},
     net::SocketAddr,
@@ -30,7 +30,7 @@ use crate::{
 /// The current state of a crawled node.
 #[derive(Debug, Clone)]
 pub struct NodeState {
-    pub node_type: NodeType,
+    pub node_type: NodeTypeId,
     pub version: u32,
     pub height: u32,
     pub status: Status,
@@ -151,7 +151,7 @@ impl KnownNetwork {
     }
 
     /// Updates the details of a node based on a Ping message received from it.
-    pub fn received_ping(&self, source: SocketAddr, node_type: NodeType, version: u32, status: Status, height: u32) {
+    pub fn received_ping(&self, source: SocketAddr, node_type: NodeTypeId, version: u32, status: Status, height: u32) {
         let timestamp = OffsetDateTime::now_utc();
 
         let mut nodes = self.nodes.write();

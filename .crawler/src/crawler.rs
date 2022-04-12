@@ -18,7 +18,7 @@
 use crate::storage::PostgresOpts;
 use crate::{constants::*, known_network::KnownNetwork, metrics::NetworkMetrics};
 use snarkos_environment::{
-    helpers::{BlockLocators, NodeType, Status},
+    helpers::{BlockLocators, NodeTypeId, Status},
     network::Data,
     Client,
     CurrentNetwork,
@@ -384,7 +384,7 @@ impl Crawler {
         Ok(())
     }
 
-    fn process_ping(&self, source: SocketAddr, node_type: NodeType, version: u32, status: Status, block_height: u32) -> io::Result<()> {
+    fn process_ping(&self, source: SocketAddr, node_type: NodeTypeId, version: u32, status: Status, block_height: u32) -> io::Result<()> {
         // Don't reject non-compliant peers in order to have the fullest image of the network.
 
         debug!(parent: self.node().span(), "peer {} is at height {}", source, block_height);

@@ -14,41 +14,97 @@
 // You should have received a copy of the GNU General Public License
 // along with the snarkOS library. If not, see <https://www.gnu.org/licenses/>.
 
-use serde::{Deserialize, Serialize};
 use std::fmt;
+
+use anyhow::{self, bail};
+use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Serialize, Deserialize, Hash)]
 #[repr(u8)]
-pub enum NodeType {
-    /// A client node is a full node, capable of sending and receiving blocks.
+pub enum NodeTypeId {
     Client = 0,
-    /// A mining node is a full node, capable of producing new blocks.
     Miner,
-    /// A beacon node is a discovery node, capable of sharing peers of the network.
     Beacon,
-    /// A sync node is a discovery node, capable of syncing nodes for the network.
     Sync,
-    /// An operating node is a full node, capable of coordinating provers in a pool.
     Operator,
-    /// A proving node is a full node, capable of producing proofs for a pool.
     Prover,
 }
 
-impl NodeType {
-    pub fn description(&self) -> &str {
-        match self {
-            Self::Client => "a client node",
-            Self::Miner => "a mining node",
-            Self::Beacon => "a beacon node",
-            Self::Sync => "a sync node",
-            Self::Operator => "an operating node",
-            Self::Prover => "a proving node",
-        }
-    }
-}
-
-impl fmt::Display for NodeType {
+impl fmt::Display for NodeTypeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{:?}", self)
     }
 }
+
+pub trait NodeType {
+    fn id() -> NodeTypeId;
+
+    fn description() -> &'static str;
+}
+
+macro_rules! impl_node_type {
+    ($t: ident, $desc: expr, $doc: expr) => {
+        #[derive(Clone, Copy, Debug)]
+        #[doc = $doc]
+        pub struct $t;
+
+        impl NodeType for $t {
+            fn id() -> NodeTypeId {
+                NodeTypeId::$t
+            }
+
+            fn description() -> &'static str {
+                $desc
+            }
+        }
+
+        impl PartialEq<NodeTypeId> for $t {
+            fn eq(&self, other: &NodeTypeId) -> bool {
+                <Self as NodeType>::id() == *other
+            }
+        }
+
+        impl TryFrom<NodeTypeId> for $t {
+            type Error = anyhow::Error;
+
+            fn try_from(id: NodeTypeId) -> anyhow::Result<Self> {
+                if id == $t::id() {
+                    Ok(Self)
+                } else {
+                    bail!("Invalid node type id");
+                }
+            }
+        }
+    };
+}
+
+impl_node_type!(
+    Client,
+    "a client node",
+    "A client node is a full node, capable of sending and receiving blocks."
+);
+impl_node_type!(
+    Miner,
+    "a mining node",
+    "A mining node is a full node, capable of producing new blocks."
+);
+impl_node_type!(
+    Beacon,
+    "a beacon node",
+    "A beacon node is a discovery node, capable of sharing peers of the network."
+);
+impl_node_type!(
+    Sync,
+    "a sync node",
+    "A sync node is a discovery node, capable of syncing nodes for the network."
+);
+impl_node_type!(
+    Operator,
+    "an operator node",
+    "An operating node is a full node, capable of coordinating provers in a pool."
+);
+impl_node_type!(
+    Prover,
+    "a prover node",
+    "A proving node is a full node, capable of producing proofs for a pool."
+);

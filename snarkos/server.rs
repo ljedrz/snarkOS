@@ -16,7 +16,7 @@
 
 use crate::{display::notification_message, Node};
 use snarkos_environment::{
-    helpers::{NodeType, Status},
+    helpers::{NodeType, NodeTypeId, Status},
     Environment,
 };
 use snarkos_network::{
@@ -246,7 +246,7 @@ impl<N: Network, E: Environment> Server<N, E> {
                 loop {
                     info!("{}", notification_message(address));
 
-                    if E::NODE_TYPE == NodeType::Miner {
+                    if E::NodeType::id() == NodeTypeId::Miner {
                         if let Some(miner_address) = address {
                             // Retrieve the latest block height.
                             let latest_block_height = state.ledger().reader().latest_block_height();

@@ -15,7 +15,7 @@
 // along with the snarkOS library. If not, see <https://www.gnu.org/licenses/>.
 
 use snarkos_environment::{
-    helpers::{NodeType, Status},
+    helpers::{node_type, NodeType, NodeTypeId, Status},
     network::{Data, DisconnectReason, Message, MessageCodec},
     Client,
     CurrentNetwork,
@@ -57,7 +57,7 @@ pub struct SynthNode {
 pub struct ClientPeer {
     pub connected_addr: SocketAddr,
     pub nonce: ClientNonce,
-    pub node_type: NodeType,
+    pub node_type: NodeTypeId,
     pub cumulative_weight: u128,
     pub peer_version: u32,
 }
@@ -135,7 +135,7 @@ impl Handshake for SynthNode {
         let own_request = ClientMessage::ChallengeRequest(
             MESSAGE_VERSION,
             MAXIMUM_FORK_DEPTH,
-            NodeType::Client,
+            NodeTypeId::Client,
             Status::Ready,
             own_ip.port(),
             self.state.local_nonce,

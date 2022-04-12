@@ -24,7 +24,7 @@ use std::{
 
 use nalgebra::{DMatrix, DVector, SymmetricEigen};
 #[cfg(not(feature = "postgres"))]
-use snarkos_environment::helpers::{NodeType, Status};
+use snarkos_environment::helpers::{NodeTypeId, Status};
 #[cfg(not(feature = "postgres"))]
 use time::Duration;
 
@@ -42,7 +42,7 @@ pub struct NetworkSummary {
     // The number of nodes that haven't provided their state yet.
     nodes_pending_state: usize,
     // The types of nodes and their respective counts.
-    types: HashMap<NodeType, usize>,
+    types: HashMap<NodeTypeId, usize>,
     // The versions of nodes and their respective counts.
     versions: HashMap<u32, usize>,
     // The node statuses of nodes and their respective counts.

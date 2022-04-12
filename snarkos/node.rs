@@ -16,7 +16,7 @@
 
 use crate::{Display, Server, Updater};
 use snarkos_environment::{
-    helpers::NodeType,
+    helpers::{NodeType, NodeTypeId},
     Client,
     ClientTrial,
     CurrentNetwork,
@@ -107,31 +107,31 @@ impl Node {
                 Ok(())
             }
             None => match &self.get_node_type() {
-                (NodeType::Client, false) => self.start_server::<CurrentNetwork, Client<CurrentNetwork>>(&None).await,
-                (NodeType::Miner, false) => self.start_server::<CurrentNetwork, Miner<CurrentNetwork>>(&self.miner).await,
-                (NodeType::Operator, false) => self.start_server::<CurrentNetwork, Operator<CurrentNetwork>>(&self.operator).await,
-                (NodeType::Prover, false) => self.start_server::<CurrentNetwork, Prover<CurrentNetwork>>(&self.prover).await,
-                (NodeType::Client, true) => self.start_server::<CurrentNetwork, ClientTrial<CurrentNetwork>>(&None).await,
-                (NodeType::Miner, true) => self.start_server::<CurrentNetwork, MinerTrial<CurrentNetwork>>(&self.miner).await,
-                (NodeType::Operator, true) => {
+                (NodeTypeId::Client, false) => self.start_server::<CurrentNetwork, Client<CurrentNetwork>>(&None).await,
+                (NodeTypeId::Miner, false) => self.start_server::<CurrentNetwork, Miner<CurrentNetwork>>(&self.miner).await,
+                (NodeTypeId::Operator, false) => self.start_server::<CurrentNetwork, Operator<CurrentNetwork>>(&self.operator).await,
+                (NodeTypeId::Prover, false) => self.start_server::<CurrentNetwork, Prover<CurrentNetwork>>(&self.prover).await,
+                (NodeTypeId::Client, true) => self.start_server::<CurrentNetwork, ClientTrial<CurrentNetwork>>(&None).await,
+                (NodeTypeId::Miner, true) => self.start_server::<CurrentNetwork, MinerTrial<CurrentNetwork>>(&self.miner).await,
+                (NodeTypeId::Operator, true) => {
                     self.start_server::<CurrentNetwork, OperatorTrial<CurrentNetwork>>(&self.operator)
                         .await
                 }
-                (NodeType::Prover, true) => self.start_server::<CurrentNetwork, ProverTrial<CurrentNetwork>>(&self.prover).await,
-                (NodeType::Sync, _) => self.start_server::<CurrentNetwork, SyncNode<CurrentNetwork>>(&None).await,
+                (NodeTypeId::Prover, true) => self.start_server::<CurrentNetwork, ProverTrial<CurrentNetwork>>(&self.prover).await,
+                (NodeTypeId::Sync, _) => self.start_server::<CurrentNetwork, SyncNode<CurrentNetwork>>(&None).await,
                 _ => panic!("Unsupported node configuration"),
             },
         }
     }
 
-    fn get_node_type(&self) -> (NodeType, bool) {
+    fn get_node_type(&self) -> (NodeTypeId, bool) {
         (
             match (self.network, &self.miner, &self.operator, &self.prover, self.sync) {
-                (2, None, None, None, false) => NodeType::Client,
-                (2, Some(_), None, None, false) => NodeType::Miner,
-                (2, None, Some(_), None, false) => NodeType::Operator,
-                (2, None, None, Some(_), false) => NodeType::Prover,
-                (2, None, None, None, true) => NodeType::Sync,
+                (2, None, None, None, false) => NodeTypeId::Client,
+                (2, Some(_), None, None, false) => NodeTypeId::Miner,
+                (2, None, Some(_), None, false) => NodeTypeId::Operator,
+                (2, None, None, Some(_), false) => NodeTypeId::Prover,
+                (2, None, None, None, true) => NodeTypeId::Sync,
                 _ => panic!("Unsupported node configuration"),
             },
             self.trial,
@@ -174,8 +174,8 @@ impl Node {
     async fn start_server<N: Network, E: Environment>(&self, address: &Option<String>) -> Result<()> {
         println!("{}", crate::display::welcome_message());
 
-        let address = match (E::NODE_TYPE, address) {
-            (NodeType::Miner, Some(address)) | (NodeType::Operator, Some(address)) | (NodeType::Prover, Some(address)) => {
+        let address = match (E::NodeType::id(), address) {
+            (NodeTypeId::Miner, Some(address)) | (NodeTypeId::Operator, Some(address)) | (NodeTypeId::Prover, Some(address)) => {
                 let address = Address::<N>::from_str(address)?;
                 println!("Your Aleo address is {}.\n", address);
                 Some(address)
@@ -183,7 +183,7 @@ impl Node {
             _ => None,
         };
 
-        println!("Starting {} on {}.", E::NODE_TYPE.description(), N::NETWORK_NAME);
+        println!("Starting {} on {}.", E::NodeType::description(), N::NETWORK_NAME);
         println!("{}", crate::display::notification_message::<N>(address));
 
         // Initialize the node's server.

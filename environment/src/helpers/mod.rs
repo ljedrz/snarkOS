@@ -17,8 +17,8 @@
 pub mod block_locators;
 pub use block_locators::*;
 
-mod node_type;
-pub use node_type::NodeType;
+pub mod node_type;
+pub use node_type::{NodeType, NodeTypeId};
 
 mod resources;
 pub use resources::{Resource, Resources};
