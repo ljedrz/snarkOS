@@ -80,8 +80,43 @@ path = "./node/router"
 [dependencies.snarkos-node-store]
 path = "./node/store"
 
+[dev-dependencies.async-trait]
+version = "0.1"
+
+[dev-dependencies.deadline]
+version = "0.2"
+
+[dev-dependencies.futures-util]
+version = "0.3"
+features = ["sink"]
+
+[dev-dependencies.parking_lot]
+version = "0.12"
+
+[dev-dependencies.pea2pea]
+version = "0.40"
+
 [dev-dependencies.rusty-hook]
 version = "0.11.2"
+
+[dev-dependencies.snarkvm]
+workspace = true
+
+[dev-dependencies.tokio]
+version = "1"
+features = ["io-util", "macros", "net", "parking_lot", "rt", "sync", "time"]
+
+[dev-dependencies.tokio-util]
+version = "0.7"
+features = ["codec"]
+
+[dev-dependencies.tracing]
+version = "0.1"
+
+[dev-dependencies.tracing-subscriber]
+version = "0.3"
+default-features = false
+features = ["ansi", "env-filter", "fmt", "parking_lot", "smallvec"]
 
 [build-dependencies.walkdir]
 version = "2"
