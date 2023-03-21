@@ -68,7 +68,7 @@ pub fn generate_consensus_instances(
     parameters.network_admin_server.worker_network_admin_server_base_port = 0;
 
     // Tweaks that make log inspection a bit more practical etc.
-    parameters.gc_depth = 100;
+    parameters.gc_depth = 10;
     parameters.max_header_num_of_batches = 50;
     parameters.min_header_delay = Duration::from_millis(500);
     parameters.max_header_delay = Duration::from_secs(2);

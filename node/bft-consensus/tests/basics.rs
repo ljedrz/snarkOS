@@ -284,6 +284,7 @@ async fn verify_garbage_collection() {
         // Submit the transaction to the chosen workers.
         for tx_client in tx_clients.iter_mut().choose_multiple(&mut rng, n_recipients) {
             tx_client.submit_transaction(tx.clone()).await.unwrap();
+            tracing::error!("committed subdags: {}", running_consensus_instances[0].primary_store.consensus_store.read_committed_sub_dags_from(&0).unwrap().len());
         }
     }
 
