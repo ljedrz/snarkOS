@@ -159,7 +159,13 @@ impl<S: ExecutionState + Send + Sync + 'static, V: narwhal_worker::TransactionVa
             worker_nodes.push(worker);
         }
 
-        let instance = RunningConsensusInstance { primary_node, worker_nodes, worker_cache: self.worker_cache, state };
+        let instance = RunningConsensusInstance {
+            primary_node,
+            primary_store: self.primary_store,
+            worker_nodes,
+            worker_cache: self.worker_cache,
+            state,
+        };
 
         Ok(instance)
     }
@@ -169,6 +175,7 @@ impl<S: ExecutionState + Send + Sync + 'static, V: narwhal_worker::TransactionVa
 #[derive(Clone)]
 pub struct RunningConsensusInstance<T: ExecutionState> {
     pub primary_node: PrimaryNode,
+    pub primary_store: NodeStorage,
     pub worker_nodes: Vec<WorkerNode>, // TODO: possibly change to the WorkerNodes struct
     pub worker_cache: Arc<ArcSwap<WorkerCache>>,
     pub state: Arc<T>,
