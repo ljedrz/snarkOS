@@ -146,6 +146,12 @@ impl ExecutionState for TestBftExecutionState {
             return;
         }
 
+        let mut leader = consensus_output.sub_dag.leader.header.author.to_string();
+        leader.truncate(8);
+        let round = consensus_output.sub_dag.round();
+        let sdi = consensus_output.sub_dag.sub_dag_index;
+        info!("Consensus [leader: {leader}, round: {round}, sdi: {sdi}]:");
+
         let mut transactions = Vec::new();
         for batch in consensus_output.batches {
             for batch in batch.1 {
