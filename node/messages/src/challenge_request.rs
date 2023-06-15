@@ -14,6 +14,8 @@
 
 use super::*;
 
+use bincode::Options;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ChallengeRequest<N: Network> {
     pub version: u32,
@@ -42,7 +44,8 @@ impl<N: Network> MessageTrait for ChallengeRequest<N> {
     /// Deserializes the given buffer into a message.
     #[inline]
     fn deserialize(bytes: BytesMut) -> Result<Self> {
-        let (version, listener_port, node_type, address, nonce) = bincode::deserialize_from(&mut bytes.reader())?;
+        let (version, listener_port, node_type, address, nonce) =
+            bincode::options().with_limit(MAXIMUM_MESSAGE_SIZE as u64).deserialize_from(&mut bytes.reader())?;
         Ok(Self { version, listener_port, node_type, address, nonce })
     }
 }

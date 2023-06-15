@@ -14,6 +14,8 @@
 
 use super::*;
 
+use bincode::Options;
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PeerResponse {
     pub peers: Vec<SocketAddr>,
@@ -35,6 +37,8 @@ impl MessageTrait for PeerResponse {
     /// Deserializes the given buffer into a message.
     #[inline]
     fn deserialize(bytes: BytesMut) -> Result<Self> {
-        Ok(Self { peers: bincode::deserialize_from(&mut bytes.reader())? })
+        Ok(Self {
+            peers: bincode::options().with_limit(MAXIMUM_MESSAGE_SIZE as u64).deserialize_from(&mut bytes.reader())?,
+        })
     }
 }
