@@ -587,7 +587,6 @@ impl<N: Network> Storage<N> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use snarkos_node_narwhal_committee::test_helpers::sample_committee;
     use snarkvm::{
         ledger::narwhal::Data,
         prelude::{Rng, TestRng},
@@ -820,7 +819,7 @@ pub mod tests {
 pub mod prop_tests {
     use super::*;
     use snarkos_node_narwhal_committee::test_helpers::CommitteeInput;
-    
+
     use test_strategy::Arbitrary;
 
     type CurrentNetwork = snarkvm::prelude::Testnet3;

@@ -99,7 +99,6 @@ impl<N: Network> Ready<N> {
 mod tests {
     use super::*;
     use crate::helpers::Storage;
-    use snarkos_node_narwhal_committee::test_helpers::sample_committee;
     use snarkvm::ledger::{coinbase::PuzzleCommitment, narwhal::Data};
 
     use ::bytes::Bytes;
