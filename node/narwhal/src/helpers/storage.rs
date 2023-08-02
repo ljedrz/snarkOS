@@ -29,6 +29,17 @@ use std::{
     },
 };
 
+#[derive(Clone, Debug)]
+pub struct Storage<N: Network>(Arc<StorageInner<N>>);
+
+impl<N: Network> std::ops::Deref for Storage<N> {
+    type Target = Arc<StorageInner<N>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 /// The storage for the memory pool.
 ///
 /// The storage is used to store the following:
@@ -47,26 +58,26 @@ use std::{
 ///   - The certificate ID is inserted into the `transmissions` map.
 /// 3. After a `round` reaches quorum threshold:
 ///  - The `committee` for the next round is inserted into the `committees` map.
-#[derive(Clone, Debug)]
-pub struct Storage<N: Network> {
+#[derive(Debug)]
+pub struct StorageInner<N: Network> {
     /* Once per round */
     /// The current round.
-    current_round: Arc<AtomicU64>,
+    current_round: AtomicU64,
     /// The map of `round` to `committee`.
-    committees: Arc<RwLock<IndexMap<u64, Committee<N>>>>,
+    committees: RwLock<IndexMap<u64, Committee<N>>>,
     /// The `round` for which garbage collection has occurred **up to** (inclusive).
-    gc_round: Arc<AtomicU64>,
+    gc_round: AtomicU64,
     /// The maximum number of rounds to keep in storage.
     max_gc_rounds: u64,
     /* Once per batch */
     /// The map of `round` to a list of `(certificate ID, batch ID, author)` entries.
-    rounds: Arc<RwLock<IndexMap<u64, IndexSet<(Field<N>, Field<N>, Address<N>)>>>>,
+    rounds: RwLock<IndexMap<u64, IndexSet<(Field<N>, Field<N>, Address<N>)>>>,
     /// The map of `certificate ID` to `certificate`.
-    certificates: Arc<RwLock<IndexMap<Field<N>, BatchCertificate<N>>>>,
+    certificates: RwLock<IndexMap<Field<N>, BatchCertificate<N>>>,
     /// The map of `batch ID` to `round`.
-    batch_ids: Arc<RwLock<IndexMap<Field<N>, u64>>>,
+    batch_ids: RwLock<IndexMap<Field<N>, u64>>,
     /// The map of `transmission ID` to `(transmission, certificate IDs)` entries.
-    transmissions: Arc<RwLock<IndexMap<TransmissionID<N>, (Transmission<N>, IndexSet<Field<N>>)>>>,
+    transmissions: RwLock<IndexMap<TransmissionID<N>, (Transmission<N>, IndexSet<Field<N>>)>>,
 }
 
 impl<N: Network> Storage<N> {
@@ -75,16 +86,16 @@ impl<N: Network> Storage<N> {
         // Retrieve the current round.
         let current_round = committee.round();
         // Return the storage.
-        Self {
-            current_round: Arc::new(AtomicU64::new(current_round)),
-            committees: Arc::new(RwLock::new(indexmap! { current_round => committee })),
+        Self(Arc::new(StorageInner {
+            current_round: AtomicU64::new(current_round),
+            committees: RwLock::new(indexmap! { current_round => committee }),
             gc_round: Default::default(),
             max_gc_rounds,
             rounds: Default::default(),
             certificates: Default::default(),
             batch_ids: Default::default(),
             transmissions: Default::default(),
-        }
+        }))
     }
 }
 
