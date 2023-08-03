@@ -35,8 +35,7 @@ impl<N: Network> EventTrait for ChallengeResponse<N> {
     /// Deserializes the given buffer into an event.
     #[inline]
     fn deserialize(bytes: BytesMut) -> Result<Self> {
-        let reader = bytes.reader();
-        Ok(Self { signature: Data::Buffer(reader.into_inner().freeze()) })
+        Ok(Self { signature: Data::Buffer(bytes.freeze()) })
     }
 }
 
