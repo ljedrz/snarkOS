@@ -474,14 +474,12 @@ impl<N: Network> BFT<N> {
         let mut buffer = vec![leader_certificate];
         // Iterate over the certificates to order.
         while let Some(certificate) = buffer.pop() {
-            // Insert the certificate into the map.
-            commit.entry(certificate.round()).or_default().insert(certificate.clone());
+            // Preserve the certificate round.
+            let certificate_round = certificate.round();
             // Iterate over the previous certificate IDs.
             for previous_certificate_id in certificate.previous_certificate_ids() {
-                let Some(previous_certificate) = self
-                    .dag
-                    .read()
-                    .get_certificate_for_round_with_id(certificate.round() - 1, *previous_certificate_id)
+                let Some(previous_certificate) =
+                    self.dag.read().get_certificate_for_round_with_id(certificate_round - 1, *previous_certificate_id)
                 else {
                     // It is either ordered or below the GC round.
                     continue;
@@ -506,6 +504,8 @@ impl<N: Network> BFT<N> {
                 // Insert the previous certificate into the buffer.
                 buffer.push(previous_certificate);
             }
+            // Insert the certificate into the map.
+            commit.entry(certificate.round()).or_default().insert(certificate);
         }
         // Ensure we only retain certificates that are above the GC round.
         commit.retain(|round, _| round + self.storage().max_gc_rounds() > self.dag.read().last_committed_round());
