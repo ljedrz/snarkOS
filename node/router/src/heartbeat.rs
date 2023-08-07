@@ -18,6 +18,7 @@ use snarkvm::prelude::Network;
 
 use colored::Colorize;
 use rand::{prelude::IteratorRandom, rngs::OsRng};
+use std::net::SocketAddr;
 
 /// A helper function to compute the maximum of two numbers.
 /// See Rust issue 92391: https://github.com/rust-lang/rust/issues/92391.
@@ -43,12 +44,15 @@ pub trait Heartbeat<N: Network>: Outbound<N> {
         self.safety_check_minimum_number_of_peers();
         self.log_connected_peers();
 
-        // Remove any stale connected peers.
-        self.remove_stale_connected_peers();
         // Remove the oldest connected peer.
-        self.remove_oldest_connected_peer();
+        let oldest_peer = self.remove_oldest_connected_peer();
+        // Remove any stale connected peers.
+        let mut removed_peers = self.remove_stale_connected_peers(oldest_peer);
+        if let Some(oldest_peer) = oldest_peer {
+            removed_peers.push(oldest_peer);
+        }
         // Keep the number of connected peers within the allowed range.
-        self.handle_connected_peers();
+        self.handle_connected_peers(&removed_peers);
         // Keep the bootstrap peers within the allowed range.
         self.handle_bootstrap_peers();
         // Keep the trusted peers connected.
@@ -86,9 +90,15 @@ pub trait Heartbeat<N: Network>: Outbound<N> {
     }
 
     /// This function removes any connected peers that have not communicated within the predefined time.
-    fn remove_stale_connected_peers(&self) {
+    /// Returns a list of addresses of the removed peers.
+    fn remove_stale_connected_peers(&self, oldest_peer: Option<SocketAddr>) -> Vec<SocketAddr> {
         // Check if any connected peer is stale.
+        let mut stale_peers = vec![];
         for peer in self.router().get_connected_peers() {
+            // Skip the oldest peer if already disconnecting from them.
+            if Some(peer.ip()) == oldest_peer {
+                continue;
+            }
             // Disconnect if the peer has not communicated back within the predefined time.
             let elapsed = peer.last_seen().elapsed().as_secs();
             if elapsed > Router::<N>::RADIO_SILENCE_IN_SECS {
@@ -96,15 +106,18 @@ pub trait Heartbeat<N: Network>: Outbound<N> {
                 // Disconnect from this peer.
                 self.router().disconnect(peer.ip());
             }
+            stale_peers.push(peer.ip());
         }
+        stale_peers
     }
 
     /// This function removes the oldest connected peer, to keep the connections fresh.
     /// This function only triggers if the router is above the minimum number of connected peers.
-    fn remove_oldest_connected_peer(&self) {
+    /// The address of the removed peer - af any - is returned.
+    fn remove_oldest_connected_peer(&self) -> Option<SocketAddr> {
         // Skip if the router is at or below the minimum number of connected peers.
         if self.router().number_of_connected_peers() <= Self::MINIMUM_NUMBER_OF_PEERS {
-            return;
+            return None;
         }
 
         // Retrieve the trusted peers.
@@ -127,6 +140,10 @@ pub trait Heartbeat<N: Network>: Outbound<N> {
             let _ = self.send(oldest, Message::Disconnect(DisconnectReason::PeerRefresh.into()));
             // Disconnect from this peer.
             self.router().disconnect(oldest);
+
+            Some(oldest)
+        } else {
+            None
         }
     }
 
@@ -134,9 +151,9 @@ pub trait Heartbeat<N: Network>: Outbound<N> {
     ///  If the node is a validator, keep REDUNDANCY_FACTOR beacons.
     ///  If the node is a client or prover, prioritize validators, and keep 0 beacons.
     /// This function keeps the number of connected peers within the allowed range.
-    fn handle_connected_peers(&self) {
+    fn handle_connected_peers(&self, already_disconnecting: &[SocketAddr]) {
         // Obtain the number of connected peers.
-        let num_connected = self.router().number_of_connected_peers();
+        let num_connected = self.router().number_of_connected_peers() - already_disconnecting.len();
         // Compute the number of surplus peers.
         let num_surplus = num_connected.saturating_sub(Self::MAXIMUM_NUMBER_OF_PEERS);
         // Compute the number of deficit peers.
@@ -160,7 +177,11 @@ pub trait Heartbeat<N: Network>: Outbound<N> {
                 .router()
                 .connected_peers()
                 .into_iter()
-                .filter(|peer_ip| !trusted.contains(peer_ip) && !bootstrap.contains(peer_ip))
+                .filter(|peer_ip| {
+                    !trusted.contains(peer_ip)
+                        && !bootstrap.contains(peer_ip)
+                        && !already_disconnecting.contains(peer_ip)
+                })
                 .choose_multiple(rng, num_surplus);
 
             // Proceed to send disconnect requests to these peers.
