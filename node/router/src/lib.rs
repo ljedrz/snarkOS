@@ -189,6 +189,8 @@ impl<N: Network> Router<N> {
                 // Disconnect from this peer.
                 let _disconnected = router.tcp.disconnect(peer_addr).await;
                 debug_assert!(_disconnected);
+            } else {
+                trace!("Couldn't resolve the address belonging to {} (likely a double disconnect).", peer_ip);
             }
         })
     }
