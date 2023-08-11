@@ -18,7 +18,7 @@ use super::*;
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub enum NarwhalErrorKind {
     /// The round in the batch proposal was too old or in the future.
-    InvalidBatchProposalRound(i64), // peer's round minus proposed round
+    InvalidBatchProposalRound(u64), // peer's round
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

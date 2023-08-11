@@ -13,7 +13,7 @@
 // limitations under the License.
 
 use crate::{
-    event::{BatchPropose, BatchSignature, CertificateRequest, CertificateResponse, Event},
+    event::{BatchPropose, BatchSignature, CertificateRequest, CertificateResponse, Event, NarwhalErrorKind},
     helpers::{
         assign_to_worker,
         assign_to_workers,
@@ -383,7 +383,7 @@ impl<N: Network> Primary<N> {
         // Ensure the batch is for the current round.
         // This method must be called after fetching previous certificates (above),
         // and prior to checking the batch header (below).
-        self.ensure_is_signing_round(batch_round)?;
+        self.ensure_is_signing_round(peer_ip, batch_round)?;
 
         // Ensure the batch header from the peer is valid.
         let missing_transmissions = self.storage.check_batch_header(&batch_header, transmissions)?;
@@ -703,22 +703,29 @@ impl<N: Network> Primary<N> {
     /// Ensures the primary is signing for the specified batch round.
     /// This method is used to ensure: for a given round, as soon as the primary starts proposing,
     /// it will no longer sign for the previous round (as it has enough previous certificates to proceed).
-    fn ensure_is_signing_round(&self, batch_round: u64) -> Result<()> {
+    fn ensure_is_signing_round(&self, peer_ip: SocketAddr, batch_round: u64) -> Result<()> {
         // Retrieve the committee round.
         let committee_round = self.current_round();
         // Ensure the batch round is within GC range of the committee round.
         if committee_round + self.storage.max_gc_rounds() <= batch_round {
+            let error_event = Event::NarwhalError(NarwhalErrorKind::InvalidBatchProposalRound(committee_round).into());
+            self.gateway.send(peer_ip, error_event);
             bail!("Round {batch_round} is too far in the future")
         }
         // Ensure the batch round is at or one before the committee round.
         // Intuition: Our primary has moved on to the next round, but has not necessarily started proposing,
         // so we can still sign for the previous round. If we have started proposing, the next check will fail.
         if committee_round > batch_round + 1 {
+            let error_event = Event::NarwhalError(NarwhalErrorKind::InvalidBatchProposalRound(committee_round).into());
+            self.gateway.send(peer_ip, error_event);
             bail!("Primary is on round {committee_round}, and no longer signing for round {batch_round}")
         }
         // Check if the primary is still signing for the batch round.
         if let Some(signing_round) = self.proposed_batch.read().as_ref().map(|proposal| proposal.round()) {
             if signing_round > batch_round {
+                let error_event =
+                    Event::NarwhalError(NarwhalErrorKind::InvalidBatchProposalRound(signing_round).into());
+                self.gateway.send(peer_ip, error_event);
                 bail!("Our primary at round {signing_round} is no longer signing for round {batch_round}")
             }
         }
