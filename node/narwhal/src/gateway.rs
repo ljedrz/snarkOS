@@ -438,6 +438,11 @@ impl<N: Network> Gateway<N> {
                 }
                 Ok(())
             }
+            Event::NarwhalError(error) => {
+                warn!("{CONTEXT} Narwhal error: {:?}", error);
+                // TODO: add error handling
+                Ok(())
+            }
         }
     }
 

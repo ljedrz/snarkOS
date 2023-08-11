@@ -36,6 +36,9 @@ pub use challenge_response::ChallengeResponse;
 mod disconnect;
 pub use disconnect::{Disconnect, DisconnectReason};
 
+mod narwhal_error;
+pub use narwhal_error::{NarwhalError, NarwhalErrorKind};
+
 mod transmission_request;
 pub use transmission_request::TransmissionRequest;
 
@@ -80,6 +83,7 @@ pub enum Event<N: Network> {
     TransmissionRequest(TransmissionRequest<N>),
     TransmissionResponse(TransmissionResponse<N>),
     WorkerPing(WorkerPing<N>),
+    NarwhalError(NarwhalError),
 }
 
 impl<N: Network> From<DisconnectReason> for Event<N> {
@@ -107,6 +111,7 @@ impl<N: Network> Event<N> {
             Self::TransmissionRequest(event) => event.name(),
             Self::TransmissionResponse(event) => event.name(),
             Self::WorkerPing(event) => event.name(),
+            Self::NarwhalError(event) => event.name(),
         }
     }
 
@@ -125,6 +130,7 @@ impl<N: Network> Event<N> {
             Self::TransmissionRequest(..) => 8,
             Self::TransmissionResponse(..) => 9,
             Self::WorkerPing(..) => 10,
+            Self::NarwhalError(..) => 11,
         }
     }
 
@@ -145,6 +151,7 @@ impl<N: Network> Event<N> {
             Self::TransmissionRequest(event) => event.serialize(writer),
             Self::TransmissionResponse(event) => event.serialize(writer),
             Self::WorkerPing(event) => event.serialize(writer),
+            Self::NarwhalError(event) => event.serialize(writer),
         }
     }
 
@@ -172,6 +179,7 @@ impl<N: Network> Event<N> {
             8 => Self::TransmissionRequest(EventTrait::deserialize(bytes)?),
             9 => Self::TransmissionResponse(EventTrait::deserialize(bytes)?),
             10 => Self::WorkerPing(EventTrait::deserialize(bytes)?),
+            11 => Self::NarwhalError(EventTrait::deserialize(bytes)?),
             _ => bail!("Unknown event ID {id}"),
         };
 
