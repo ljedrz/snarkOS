@@ -503,6 +503,8 @@ impl<N: Network> Primary<N> {
             mut rx_certificate_response,
             mut rx_unconfirmed_solution,
             mut rx_unconfirmed_transaction,
+            mut rx_error,
+            tx_error: _, // this sender can be used to subscribe to errors
         } = primary_receiver;
 
         // Start the batch proposer.
@@ -510,7 +512,18 @@ impl<N: Network> Primary<N> {
         self.spawn(async move {
             loop {
                 // Sleep briefly, but longer than if there were no batch.
-                tokio::time::sleep(Duration::from_millis(MAX_BATCH_DELAY)).await;
+                tokio::select! {
+                    biased;
+
+                    Ok((_peer_ip, error)) = rx_error.recv() => {
+                        match error.kind {
+                            NarwhalErrorKind::InvalidBatchProposalRound(_peer_round) => {
+                                // TODO: attempt to sync with the peer if peers_round is higher than ours
+                            }
+                        }
+                    }
+                    _ = tokio::time::sleep(Duration::from_millis(MAX_BATCH_DELAY)) => {}
+                };
                 // If there is no proposed batch, attempt to propose a batch.
                 if let Err(e) = self_.propose_batch().await {
                     warn!("Cannot propose a batch - {e}");

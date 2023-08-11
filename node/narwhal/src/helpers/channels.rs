@@ -17,6 +17,7 @@ use crate::{
     BatchSignature,
     CertificateRequest,
     CertificateResponse,
+    NarwhalError,
     TransmissionRequest,
     TransmissionResponse,
 };
@@ -32,7 +33,7 @@ use snarkvm::{
 
 use indexmap::IndexMap;
 use std::net::SocketAddr;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::{broadcast, mpsc, oneshot};
 
 const MAX_CHANNEL_SIZE: usize = 8192;
 
@@ -89,6 +90,7 @@ pub struct PrimarySender<N: Network> {
     pub tx_unconfirmed_solution:
         mpsc::Sender<(PuzzleCommitment<N>, Data<ProverSolution<N>>, oneshot::Sender<Result<()>>)>,
     pub tx_unconfirmed_transaction: mpsc::Sender<(N::TransactionID, Data<Transaction<N>>, oneshot::Sender<Result<()>>)>,
+    pub tx_error: broadcast::Sender<(SocketAddr, NarwhalError)>,
 }
 
 #[derive(Debug)]
@@ -102,6 +104,8 @@ pub struct PrimaryReceiver<N: Network> {
         mpsc::Receiver<(PuzzleCommitment<N>, Data<ProverSolution<N>>, oneshot::Sender<Result<()>>)>,
     pub rx_unconfirmed_transaction:
         mpsc::Receiver<(N::TransactionID, Data<Transaction<N>>, oneshot::Sender<Result<()>>)>,
+    pub rx_error: broadcast::Receiver<(SocketAddr, NarwhalError)>,
+    pub tx_error: broadcast::Sender<(SocketAddr, NarwhalError)>,
 }
 
 /// Initializes the primary channels.
@@ -113,6 +117,7 @@ pub fn init_primary_channels<N: Network>() -> (PrimarySender<N>, PrimaryReceiver
     let (tx_certificate_response, rx_certificate_response) = mpsc::channel(MAX_CHANNEL_SIZE);
     let (tx_unconfirmed_solution, rx_unconfirmed_solution) = mpsc::channel(MAX_CHANNEL_SIZE);
     let (tx_unconfirmed_transaction, rx_unconfirmed_transaction) = mpsc::channel(MAX_CHANNEL_SIZE);
+    let (tx_error, rx_error) = broadcast::channel(MAX_CHANNEL_SIZE);
 
     let sender = PrimarySender {
         tx_batch_propose,
@@ -122,6 +127,7 @@ pub fn init_primary_channels<N: Network>() -> (PrimarySender<N>, PrimaryReceiver
         tx_certificate_response,
         tx_unconfirmed_solution,
         tx_unconfirmed_transaction,
+        tx_error: tx_error.clone(),
     };
     let receiver = PrimaryReceiver {
         rx_batch_propose,
@@ -131,6 +137,8 @@ pub fn init_primary_channels<N: Network>() -> (PrimarySender<N>, PrimaryReceiver
         rx_certificate_response,
         rx_unconfirmed_solution,
         rx_unconfirmed_transaction,
+        rx_error,
+        tx_error,
     };
 
     (sender, receiver)
