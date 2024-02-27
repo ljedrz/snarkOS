@@ -23,6 +23,10 @@ use rayon::{
 };
 use snow::{HandshakeState, StatelessTransportState};
 use std::{io, sync::Arc};
+use tokio::{
+    sync::oneshot::{self, error::TryRecvError},
+    task,
+};
 use tokio_util::codec::{Decoder, Encoder, LengthDelimitedCodec};
 use tracing::*;
 
@@ -172,6 +176,7 @@ pub struct NoiseCodec<N: Network> {
     codec: LengthDelimitedCodec,
     event_codec: EventCodec<N>,
     pub noise_state: NoiseState,
+    decrypted_message: Option<oneshot::Receiver<Result<Result<(BytesMut, u64), io::Error>, task::JoinError>>>,
 }
 
 impl<N: Network> NoiseCodec<N> {
@@ -180,6 +185,7 @@ impl<N: Network> NoiseCodec<N> {
             codec: LengthDelimitedCodec::builder().max_frame_length(MAX_EVENT_SIZE).little_endian().new_codec(),
             event_codec: EventCodec::default(),
             noise_state,
+            decrypted_message: None,
         }
     }
 }
@@ -278,13 +284,12 @@ impl<N: Network> Decoder for NoiseCodec<N> {
         #[cfg(feature = "metrics")]
         let start = std::time::Instant::now();
 
-        // Decode the ciphertext with the length-delimited codec.
-        let Some(bytes) = self.codec.decode(src)? else {
-            return Ok(None);
-        };
-
         let msg = match self.noise_state {
             NoiseState::Handshake(ref mut noise) => {
+                // Decode the ciphertext with the length-delimited codec.
+                let Some(bytes) = self.codec.decode(src)? else {
+                    return Ok(None);
+                };
                 // Decrypt the ciphertext in handshake mode.
                 let mut buffer = [0u8; MAX_MESSAGE_LEN];
                 let len = noise.read_message(&bytes, &mut buffer).map_err(|_| io::ErrorKind::InvalidData)?;
@@ -293,30 +298,79 @@ impl<N: Network> Decoder for NoiseCodec<N> {
             }
 
             NoiseState::PostHandshake(ref mut noise) => {
-                // Noise decryption.
-                let decrypted_chunks = bytes
-                    .par_chunks(MAX_MESSAGE_LEN)
-                    .enumerate()
-                    .map(|(nonce_offset, encrypted_chunk)| {
-                        let mut buffer = vec![0u8; MAX_MESSAGE_LEN];
+                let mut plaintext: BytesMut = if let Some(ref mut rx) = self.decrypted_message {
+                    match rx.try_recv() {
+                        Ok(Ok(Ok((plaintext, rx_nonce)))) => {
+                            self.decrypted_message = None;
+                            noise.rx_nonce = rx_nonce;
+                            plaintext
+                        }
+                        Ok(Ok(Err(_))) => {
+                            self.decrypted_message = None;
+                            return Err(io::ErrorKind::InvalidData.into());
+                        }
+                        Ok(Err(err)) => {
+                            self.decrypted_message = None;
+                            return Err(err.into());
+                        }
+                        Err(TryRecvError::Empty) => {
+                            return Ok(None);
+                        }
+                        Err(TryRecvError::Closed) => {
+                            self.decrypted_message = None;
+                            return Err(io::ErrorKind::BrokenPipe.into());
+                        }
+                    }
+                } else {
+                    // Decode the ciphertext with the length-delimited codec.
+                    let Some(bytes) = self.codec.decode(src)? else {
+                        return Ok(None);
+                    };
 
-                        // Decrypt the ciphertext in post-handshake mode.
-                        let len = noise
-                            .state
-                            .read_message(noise.rx_nonce + nonce_offset as u64, encrypted_chunk, &mut buffer)
-                            .map_err(|_| io::ErrorKind::InvalidData)?;
+                    let (tx, rx) = oneshot::channel();
+                    self.decrypted_message = Some(rx);
 
-                        buffer.truncate(len);
-                        Ok(buffer)
-                    })
-                    .collect::<io::Result<Vec<Vec<u8>>>>()?;
+                    let mut noise_ = noise.clone();
+                    task::spawn(async move {
+                        let decryption_result = task::spawn_blocking(move || {
+                            // Noise decryption.
+                            let decrypted_chunks = bytes
+                                .par_chunks(MAX_MESSAGE_LEN)
+                                .enumerate()
+                                .map(|(nonce_offset, encrypted_chunk)| {
+                                    let mut buffer = vec![0u8; MAX_MESSAGE_LEN];
 
-                // Collect chunks into plaintext to be passed to the message codecs.
-                let mut plaintext = BytesMut::new();
-                for chunk in decrypted_chunks {
-                    plaintext.extend_from_slice(&chunk);
-                    noise.rx_nonce += 1;
-                }
+                                    // Decrypt the ciphertext in post-handshake mode.
+                                    let len = noise_
+                                        .state
+                                        .read_message(
+                                            noise_.rx_nonce + nonce_offset as u64,
+                                            encrypted_chunk,
+                                            &mut buffer,
+                                        )
+                                        .map_err(|_| io::ErrorKind::InvalidData)?;
+
+                                    buffer.truncate(len);
+                                    Ok(buffer)
+                                })
+                                .collect::<io::Result<Vec<Vec<u8>>>>()?;
+
+                            // Collect chunks into plaintext to be passed to the message codecs.
+                            let mut plaintext = BytesMut::new();
+                            for chunk in decrypted_chunks {
+                                plaintext.extend_from_slice(&chunk);
+                                noise_.rx_nonce += 1;
+                            }
+
+                            Ok((plaintext, noise_.rx_nonce))
+                        })
+                        .await;
+
+                        let _ = tx.send(decryption_result);
+                    });
+
+                    return Ok(None);
+                };
 
                 // Decode with message codecs.
                 self.event_codec.decode(&mut plaintext)?.map(|msg| EventOrBytes::Event(msg))

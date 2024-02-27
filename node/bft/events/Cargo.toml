@@ -52,6 +52,9 @@ workspace = true
 [dependencies.snow]
 version = "0.9"
 
+[dependencies.tokio]
+version = "1"
+
 [dependencies.tokio-util]
 version = "0.7"
 features = [ "codec" ]
