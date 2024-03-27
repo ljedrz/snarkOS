@@ -67,8 +67,17 @@ features = [ "derive" ]
 [dependencies.crossterm]
 version = "0.27.0"
 
+[dependencies.humansize]
+version = "2"
+
 [dependencies.once_cell]
 version = "1"
+
+[dependencies.num-format]
+version = "0.4"
+
+[dependencies.tracing]
+version = "0.1"
 
 [dependencies.snarkos-account]
 path = "./account"
@@ -120,7 +129,7 @@ path = "./node/tcp"
 version = "=2.2.7"
 
 [target.'cfg(all(target_os = "linux", target_arch = "x86_64"))'.dependencies]
-tikv-jemallocator = "0.5"
+system_alloc_stats = "0.1"
 
 [dev-dependencies.rusty-hook]
 version = "0.11.2"

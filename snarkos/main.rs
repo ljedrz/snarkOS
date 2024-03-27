@@ -15,16 +15,32 @@
 use snarkos_cli::{commands::CLI, helpers::Updater};
 
 use clap::Parser;
+use humansize::{format_size, BINARY};
+use num_format::{Locale, ToFormattedString};
 use std::process::exit;
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
-use tikv_jemallocator::Jemalloc;
+use system_alloc_stats::SystemWithStats;
 
 #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
 #[global_allocator]
-static GLOBAL: Jemalloc = Jemalloc;
+static SWS: SystemWithStats = SystemWithStats;
 
 fn main() -> anyhow::Result<()> {
+    std::thread::spawn(|| {
+        loop {
+            std::thread::sleep(std::time::Duration::from_secs(60));
+
+            tracing::info!(
+                "HEAP: {} curr; {} max; {} allocs; {} deallocs",
+                format_size(SWS.use_curr(), BINARY),
+                format_size(SWS.use_max(), BINARY),
+                SWS.alloc_count().to_formatted_string(&Locale::en),
+                SWS.dealloc_count().to_formatted_string(&Locale::en)
+            );
+        }
+    });
+
     // Parse the given arguments.
     let cli = CLI::parse();
     // Run the updater.
