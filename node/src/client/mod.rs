@@ -91,7 +91,11 @@ impl<N: Network, C: ConsensusStorage<N>> Client<N, C> {
         let signal_node = Self::handle_signals(shutdown.clone());
 
         // Initialize the ledger.
-        let ledger = Ledger::<N, C>::load(genesis.clone(), storage_mode.clone())?;
+        let ledger = {
+            // Initialize a temporary threadpool that can use the full CPU.
+            let threadpool = rayon::ThreadPoolBuilder::new().build().unwrap();
+            threadpool.install(|| Ledger::<N, C>::load(genesis.clone(), storage_mode.clone()))?
+        };
 
         // Initialize the CDN.
         if let Some(base_url) = cdn {
