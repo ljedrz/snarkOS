@@ -17,7 +17,7 @@ use crate::MAX_FETCH_TIMEOUT_IN_MS;
 use snarkos_node_bft_ledger_service::LedgerService;
 use snarkvm::{console::network::Network, ledger::committee::Committee};
 
-use parking_lot::RwLock;
+use locktick::parking_lot::RwLock;
 use std::{
     collections::{HashMap, HashSet},
     hash::Hash,

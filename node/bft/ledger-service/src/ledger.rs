@@ -27,8 +27,8 @@ use snarkvm::{
 };
 
 use indexmap::IndexMap;
+use locktick::parking_lot::{Mutex, RwLock};
 use lru::LruCache;
-use parking_lot::{Mutex, RwLock};
 use std::{
     fmt,
     io::Read,

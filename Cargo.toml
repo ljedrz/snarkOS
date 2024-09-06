@@ -70,8 +70,15 @@ features = [ "derive" ]
 [dependencies.crossterm]
 version = "0.27.0"
 
+[dependencies.locktick]
+version = "0.2"
+features = ["parking_lot", "tokio"]
+
 [dependencies.once_cell]
 version = "1"
+
+[dependencies.tracing]
+version = "0.1"
 
 [dependencies.snarkos-account]
 path = "./account"
@@ -139,6 +146,8 @@ version = "2"
 opt-level = 3
 lto = "thin"
 incremental = true
+debug = "line-tables-only"
+strip = "none"
 
 [profile.bench]
 opt-level = 3
