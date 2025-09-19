@@ -335,6 +335,17 @@ impl<N: Network> Primary<N> {
     pub fn worker_transactions(&self) -> impl '_ + Iterator<Item = (N::TransactionID, Data<Transaction<N>>)> {
         self.workers.iter().flat_map(|worker| worker.transactions())
     }
+
+    /// Returns `true` if the transmission ID exists in the proposed batch, storage, or ledger.
+    pub fn contains_transaction(&self, transaction_id: N::TransactionID) -> bool {
+        // Check if the transaction ID exists in the proposed batch, storage, or ledger.
+        self.proposed_batch
+            .read()
+            .as_ref()
+            .is_some_and(|p| p.transmissions().keys().filter_map(|t| t.transaction()).any(|id| id == transaction_id))
+            || self.storage.contains_transaction(transaction_id)
+            || self.ledger.get_unconfirmed_transaction(transaction_id).is_ok()
+    }
 }
 
 impl<N: Network> Primary<N> {

@@ -174,6 +174,17 @@ impl<N: Network> Worker<N> {
             || self.ledger.contains_transmission(&transmission_id).unwrap_or(false)
     }
 
+    /// Returns `true` if the transmission ID exists in the proposed batch, storage, or ledger.
+    pub fn contains_transaction(&self, transaction_id: N::TransactionID) -> bool {
+        // Check if the transaction ID exists in the ready queue, proposed batch, storage, or ledger.
+        self.ready.read().transmission_ids().iter().filter_map(|t| t.transaction()).any(|id| id == transaction_id)
+            || self.proposed_batch.read().as_ref().is_some_and(|p| {
+                p.transmissions().keys().filter_map(|t| t.transaction()).any(|id| id == transaction_id)
+            })
+            || self.storage.contains_transaction(transaction_id)
+            || self.ledger.get_unconfirmed_transaction(transaction_id).is_ok()
+    }
+
     /// Returns the transmission if it exists in the ready queue, proposed batch, storage.
     ///
     /// Note: We explicitly forbid retrieving a transmission from the ledger, as transmissions

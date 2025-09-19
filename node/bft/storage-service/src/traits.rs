@@ -32,6 +32,9 @@ pub trait StorageService<N: Network>: Debug + Send + Sync {
     /// If the transmission ID does not exist in storage, `None` is returned.
     fn get_transmission(&self, transmission_id: TransmissionID<N>) -> Option<Transmission<N>>;
 
+    /// Returns `true` if the storage contains the specified `transaction ID`.
+    fn contains_transaction(&self, transaction_id: N::TransactionID) -> bool;
+
     /// Returns the missing transmissions in storage from the given transmissions.
     fn find_missing_transmissions(
         &self,

@@ -286,6 +286,11 @@ impl<N: Network> Storage<N> {
         self.transmissions.contains_transmission(transmission_id.into())
     }
 
+    /// Returns `true` if the storage contains the specified `transaction ID`.
+    pub fn contains_transaction(&self, transaction_id: N::TransactionID) -> bool {
+        self.transmissions.contains_transaction(transaction_id)
+    }
+
     /// Returns the transmission for the given `transmission ID`.
     /// If the transmission ID does not exist in storage, `None` is returned.
     pub fn get_transmission(&self, transmission_id: impl Into<TransmissionID<N>>) -> Option<Transmission<N>> {

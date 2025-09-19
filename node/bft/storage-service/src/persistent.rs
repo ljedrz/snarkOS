@@ -118,6 +118,12 @@ impl<N: Network> StorageService<N> for BFTPersistentStorage<N> {
         }
     }
 
+    /// Returns `true` if the storage contains the specified `transaction ID`.
+    fn contains_transaction(&self, transaction_id: N::TransactionID) -> bool {
+        self.transmissions.iter_pending().filter_map(|(t, _)| t.transaction()).any(|id| id == transaction_id)
+            || self.transmissions.iter_confirmed().filter_map(|(t, _)| t.transaction()).any(|id| id == transaction_id)
+    }
+
     /// Returns the missing transmissions in storage from the given transmissions.
     fn find_missing_transmissions(
         &self,

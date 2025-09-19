@@ -98,6 +98,16 @@ struct SyncStatus<'a> {
     sync_speed_bps: f64,
 }
 
+/// The return value for a `transaction_status` query.
+#[skip_serializing_none]
+#[derive(Clone, Copy, Serialize)]
+enum TxStatus {
+    Mempool,
+    Primary,
+    Worker,
+    Ledger,
+}
+
 impl<N: Network, C: ConsensusStorage<N>, R: Routing<N>> Rest<N, C, R> {
     /// GET /<network>/version
     pub(crate) async fn get_version() -> ErasedJson {
@@ -293,6 +303,29 @@ impl<N: Network, C: ConsensusStorage<N>, R: Routing<N>> Rest<N, C, R> {
         Ok(ErasedJson::pretty(rest.ledger.get_unconfirmed_transaction(&tx_id).map_err(|err| {
             if err.to_string().contains("Missing") { RestError::not_found(err) } else { RestError::from(err) }
         })?))
+    }
+
+    /// GET /<network>/transaction/pending/{transactionID}
+    pub(crate) async fn transaction_status(
+        State(rest): State<Self>,
+        Path(tx_id): Path<N::TransactionID>,
+    ) -> Result<ErasedJson, RestError> {
+        // If the consensus layer is available, check it first.
+        if let Some(consensus) = &rest.consensus {
+            // First, check the mempool.
+            let is_in_mempool = consensus.contains_transaction(&tx_id);
+            // Then the primary.
+            let is_in_primary = consensus.bft().primary().contains_transaction(tx_id);
+            // Then the workers.
+            let is_in_worker = consensus.bft().primary().workers().iter().any(|w| w.contains_transaction(tx_id));
+            // Then the DAG.
+            let is_in_dag = todo!();
+        }
+        // Ledger returns a generic anyhow::Error, so checking the message is the only way to parse it.
+        // Ok(ErasedJson::pretty(rest.ledger.(tx_id).map_err(|err| {
+        //     if err.to_string().contains("Missing") { RestError::not_found(err) } else { RestError::from(err) }
+        // })?))
+        todo!()
     }
 
     /// GET /<network>/memoryPool/transmissions

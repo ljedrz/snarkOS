@@ -65,6 +65,11 @@ impl<N: Network> StorageService<N> for BFTMemoryService<N> {
         self.transmissions.read().get(&transmission_id).map(|(transmission, _)| transmission).cloned()
     }
 
+    /// Returns `true` if the storage contains the specified `transaction ID`.
+    fn contains_transaction(&self, transaction_id: N::TransactionID) -> bool {
+        self.transmissions.read().keys().filter_map(|t| t.transaction()).any(|id| id == transaction_id)
+    }
+
     /// Returns the missing transmissions in storage from the given transmissions.
     fn find_missing_transmissions(
         &self,
