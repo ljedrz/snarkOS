@@ -24,9 +24,6 @@ pub use helpers::*;
 mod block_request;
 pub use block_request::BlockRequest;
 
-mod block_response;
-pub use block_response::BlockResponse;
-
 mod challenge_request;
 pub use challenge_request::ChallengeRequest;
 
@@ -60,8 +57,6 @@ pub use unconfirmed_solution::UnconfirmedSolution;
 mod unconfirmed_transaction;
 pub use unconfirmed_transaction::UnconfirmedTransaction;
 
-pub use snarkos_node_bft_events::DataBlocks;
-
 use snarkos_node_sync_locators::BlockLocators;
 use snarkvm::prelude::{
     Address,
@@ -85,7 +80,6 @@ pub trait MessageTrait: ToBytes + FromBytes {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Message<N: Network> {
     BlockRequest(BlockRequest),
-    BlockResponse(BlockResponse<N>),
     ChallengeRequest(ChallengeRequest<N>),
     ChallengeResponse(ChallengeResponse<N>),
     Disconnect(Disconnect),
@@ -155,7 +149,6 @@ impl<N: Network> Message<N> {
     pub fn name(&self) -> Cow<'static, str> {
         match self {
             Self::BlockRequest(message) => message.name(),
-            Self::BlockResponse(message) => message.name(),
             Self::ChallengeRequest(message) => message.name(),
             Self::ChallengeResponse(message) => message.name(),
             Self::Disconnect(message) => message.name(),
@@ -175,7 +168,7 @@ impl<N: Network> Message<N> {
     pub fn id(&self) -> u16 {
         match self {
             Self::BlockRequest(..) => 0,
-            Self::BlockResponse(..) => 1,
+            // 1 used to be BlockResponse
             Self::ChallengeRequest(..) => 2,
             Self::ChallengeResponse(..) => 3,
             Self::Disconnect(..) => 4,
@@ -219,7 +212,6 @@ impl<N: Network> ToBytes for Message<N> {
 
         match self {
             Self::BlockRequest(message) => message.write_le(writer),
-            Self::BlockResponse(message) => message.write_le(writer),
             Self::ChallengeRequest(message) => message.write_le(writer),
             Self::ChallengeResponse(message) => message.write_le(writer),
             Self::Disconnect(message) => message.write_le(writer),
@@ -245,7 +237,6 @@ impl<N: Network> FromBytes for Message<N> {
         // Deserialize the data field.
         let message = match id {
             0 => Self::BlockRequest(BlockRequest::read_le(&mut reader)?),
-            1 => Self::BlockResponse(BlockResponse::read_le(&mut reader)?),
             2 => Self::ChallengeRequest(ChallengeRequest::read_le(&mut reader)?),
             3 => Self::ChallengeResponse(ChallengeResponse::read_le(&mut reader)?),
             4 => Self::Disconnect(Disconnect::read_le(&mut reader)?),
@@ -257,7 +248,7 @@ impl<N: Network> FromBytes for Message<N> {
             10 => Self::PuzzleResponse(PuzzleResponse::read_le(&mut reader)?),
             11 => Self::UnconfirmedSolution(UnconfirmedSolution::read_le(&mut reader)?),
             12 => Self::UnconfirmedTransaction(UnconfirmedTransaction::read_le(&mut reader)?),
-            13.. => return Err(error("Unknown message ID {id}")),
+            1 | 13.. => return Err(error("Unknown message ID {id}")),
         };
 
         // Ensure that there are no "dangling" bytes.

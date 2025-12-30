@@ -70,18 +70,15 @@ impl FromBytes for BlockRequest {
 
 #[cfg(test)]
 pub mod prop_tests {
-    use crate::{BlockRequest, DataBlocks};
+    use crate::BlockRequest;
 
-    use snarkvm::{
-        console::network::MainnetV0,
-        utilities::{FromBytes, ToBytes},
-    };
+    use snarkvm::utilities::{FromBytes, ToBytes};
 
     use bytes::{Buf, BufMut, BytesMut};
     use proptest::prelude::prop_compose;
     use test_strategy::proptest;
 
-    const MAX_RANGE: u32 = DataBlocks::<MainnetV0>::MAXIMUM_NUMBER_OF_BLOCKS as u32;
+    const MAX_RANGE: u32 = 5;
 
     prop_compose! {
         /// Creates a block request with a start point and a valid range.

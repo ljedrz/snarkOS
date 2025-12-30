@@ -19,8 +19,6 @@ use snarkos_node_router::{
     Routing,
     messages::{
         BlockRequest,
-        BlockResponse,
-        DataBlocks,
         DisconnectReason,
         MessageCodec,
         PeerRequest,
@@ -30,9 +28,10 @@ use snarkos_node_router::{
         UnconfirmedTransaction,
     },
 };
+use snarkos_node_sync::DataBlocks;
 use snarkos_node_tcp::{Connection, ConnectionSide, Tcp};
 use snarkvm::{
-    console::network::{ConsensusVersion, Network},
+    console::network::Network,
     ledger::{block::Transaction, narwhal::Data},
     utilities::flatten_error,
 };
@@ -110,16 +109,7 @@ impl<N: Network, C: ConsensusStorage<N>> Reading for Client<N, C> {
 
     /// Processes a message received from the network.
     async fn process_message(&self, peer_addr: SocketAddr, message: Self::Message) -> io::Result<()> {
-        let clone = self.clone();
-        if matches!(message, Message::BlockRequest(_) | Message::BlockResponse(_)) {
-            // Handle BlockRequest and BlockResponse messages in a separate task to not block the
-            // inbound queue.
-            tokio::spawn(async move {
-                clone.process_message_inner(peer_addr, message).await;
-            });
-        } else {
-            self.process_message_inner(peer_addr, message).await;
-        }
+        self.process_message_inner(peer_addr, message).await;
         Ok(())
     }
 }
@@ -204,26 +194,26 @@ impl<N: Network, C: ConsensusStorage<N>> Inbound<N> for Client<N, C> {
         };
 
         // Send the `BlockResponse` message to the peer.
-        self.router()
-            .send(peer_ip, Message::BlockResponse(BlockResponse::new(message, blocks, latest_consensus_version)));
+        // self.router()
+        //     .send(peer_ip, Message::BlockResponse(BlockResponse::new(message, blocks, latest_consensus_version)));
         true
     }
 
-    /// Handles a `BlockResponse` message.
-    fn block_response(
-        &self,
-        peer_ip: SocketAddr,
-        blocks: Vec<Block<N>>,
-        latest_consensus_version: Option<ConsensusVersion>,
-    ) -> bool {
-        // We do not need to explicitly sync here because insert_block_response, will wake up the sync task.
-        if let Err(err) = self.sync.insert_block_responses(peer_ip, blocks, latest_consensus_version) {
-            warn!("{}", flatten_error(err.context("Failed to insert block response")));
-            false
-        } else {
-            true
-        }
-    }
+    // /// Handles a `BlockResponse` message.
+    // fn block_response(
+    //     &self,
+    //     peer_ip: SocketAddr,
+    //     blocks: Vec<Block<N>>,
+    //     latest_consensus_version: Option<ConsensusVersion>,
+    // ) -> bool {
+    //     // We do not need to explicitly sync here because insert_block_response, will wake up the sync task.
+    //     if let Err(err) = self.sync.insert_block_responses(peer_ip, blocks, latest_consensus_version) {
+    //         warn!("{}", flatten_error(err.context("Failed to insert block response")));
+    //         false
+    //     } else {
+    //         true
+    //     }
+    // }
 
     /// Processes the block locators and sends back a `Pong` message.
     fn ping(&self, peer_ip: SocketAddr, message: Ping<N>) -> bool {

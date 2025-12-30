@@ -28,12 +28,10 @@ use aleo_std::StorageMode;
 use snarkos_account::Account;
 use snarkos_node_bft_events::{
     BlockRequest,
-    BlockResponse,
     CertificateRequest,
     CertificateResponse,
     ChallengeRequest,
     ChallengeResponse,
-    DataBlocks,
     Event,
     EventTrait,
     TransmissionRequest,
@@ -52,7 +50,13 @@ use snarkos_node_network::{
     get_repo_commit_hash,
     log_repo_sha_comparison,
 };
-use snarkos_node_sync::{MAX_BLOCKS_BEHIND, communication_service::CommunicationService};
+use snarkos_node_sync::{
+    BlockResponse,
+    DataBlocks,
+    MAX_BLOCKS_BEHIND,
+    SyncCodec,
+    communication_service::CommunicationService,
+};
 use snarkos_node_tcp::{
     Config,
     Connection,
@@ -599,7 +603,7 @@ impl<N: Network> Gateway<N> {
                     bail!("Block request from '{peer_ip}' has an invalid range ({start_height}..{end_height})")
                 }
                 // Ensure that the block request is within the allowed bounds.
-                if end_height - start_height > DataBlocks::<N>::MAXIMUM_NUMBER_OF_BLOCKS as u32 {
+                if end_height - start_height > BlockResponse::<N>::MAXIMUM_NUMBER_OF_BLOCKS as u32 {
                     bail!("Block request from '{peer_ip}' has an excessive range ({start_height}..{end_height})")
                 }
 
@@ -621,48 +625,60 @@ impl<N: Network> Gateway<N> {
                     Err(error) => return Err(anyhow!("[BlockRequest] {error}")),
                 };
 
-                let self_ = self.clone();
                 tokio::spawn(async move {
-                    // Send the `BlockResponse` message to the peer.
-                    let event =
-                        Event::BlockResponse(BlockResponse::new(block_request, blocks, latest_consensus_version));
-                    Transport::send(&self_, peer_ip, event).await;
+                    // TODO: const-ify the duration of a single sync session
+                    // TODO: respond with either more blocks or more messages
+                    let _ = tokio::time::timeout(Duration::from_secs(30), async move {
+                        let stream = TcpStream::connect(peer_ip).await?;
+                        let mut framed = Framed::new(stream, SyncCodec::<N>::default());
+
+                        let response = BlockResponse::new(
+                            block_request.start_height,
+                            block_request.end_height,
+                            blocks,
+                            latest_consensus_version,
+                        );
+                        framed.send(response).await?;
+
+                        Ok::<(), anyhow::Error>(())
+                    })
+                    .await;
                 });
                 Ok(true)
             }
-            Event::BlockResponse(BlockResponse { request, latest_consensus_version, blocks, .. }) => {
-                // Process the block response. Except for some tests, there is always a sync sender.
-                if let Some(sync_sender) = self.sync_sender.get() {
-                    // Check the response corresponds to a request.
-                    if !self.cache.remove_outbound_block_request(peer_ip, &request) {
-                        bail!("Unsolicited block response from '{peer_ip}'")
-                    }
+            // Event::BlockResponse(BlockResponse { request, latest_consensus_version, blocks, .. }) => {
+            //     // Process the block response. Except for some tests, there is always a sync sender.
+            //     if let Some(sync_sender) = self.sync_sender.get() {
+            //         // Check the response corresponds to a request.
+            //         if !self.cache.remove_outbound_block_request(peer_ip, &request) {
+            //             bail!("Unsolicited block response from '{peer_ip}'")
+            //         }
 
-                    // Perform the deferred non-blocking deserialization of the blocks.
-                    // The deserialization can take a long time (minutes). We should not be running
-                    // this on a blocking task, but on a rayon thread pool.
-                    let (send, recv) = tokio::sync::oneshot::channel();
-                    rayon::spawn_fifo(move || {
-                        let blocks = blocks.deserialize_blocking().map_err(|error| anyhow!("[BlockResponse] {error}"));
-                        let _ = send.send(blocks);
-                    });
-                    let blocks = match recv.await {
-                        Ok(Ok(blocks)) => blocks,
-                        Ok(Err(error)) => bail!("Peer '{peer_ip}' sent an invalid block response - {error}"),
-                        Err(error) => bail!("Peer '{peer_ip}' sent an invalid block response - {error}"),
-                    };
+            //         // Perform the deferred non-blocking deserialization of the blocks.
+            //         // The deserialization can take a long time (minutes). We should not be running
+            //         // this on a blocking task, but on a rayon thread pool.
+            //         let (send, recv) = tokio::sync::oneshot::channel();
+            //         rayon::spawn_fifo(move || {
+            //             let blocks = blocks.deserialize_blocking().map_err(|error| anyhow!("[BlockResponse] {error}"));
+            //             let _ = send.send(blocks);
+            //         });
+            //         let blocks = match recv.await {
+            //             Ok(Ok(blocks)) => blocks,
+            //             Ok(Err(error)) => bail!("Peer '{peer_ip}' sent an invalid block response - {error}"),
+            //             Err(error) => bail!("Peer '{peer_ip}' sent an invalid block response - {error}"),
+            //         };
 
-                    // Ensure the block response is well-formed.
-                    blocks.ensure_response_is_well_formed(peer_ip, request.start_height, request.end_height)?;
-                    // Send the blocks to the sync module.
-                    if let Err(err) =
-                        sync_sender.insert_block_response(peer_ip, blocks.0, latest_consensus_version).await
-                    {
-                        warn!("Unable to process block response from '{peer_ip}' - {err}");
-                    }
-                }
-                Ok(true)
-            }
+            //         // Ensure the block response is well-formed.
+            //         blocks.ensure_response_is_well_formed(peer_ip, request.start_height, request.end_height)?;
+            //         // Send the blocks to the sync module.
+            //         if let Err(err) =
+            //             sync_sender.insert_block_response(peer_ip, blocks.0, latest_consensus_version).await
+            //         {
+            //             warn!("Unable to process block response from '{peer_ip}' - {err}");
+            //         }
+            //     }
+            //     Ok(true)
+            // }
             Event::CertificateRequest(certificate_request) => {
                 // Send the certificate request to the sync module.
                 // Except for some tests, there is always a sync sender.
@@ -1223,16 +1239,7 @@ impl<N: Network> Reading for Gateway<N> {
 
     /// Processes a message received from the network.
     async fn process_message(&self, peer_addr: SocketAddr, message: Self::Message) -> io::Result<()> {
-        if matches!(message, Event::BlockRequest(_) | Event::BlockResponse(_)) {
-            let self_ = self.clone();
-            // Handle BlockRequest and BlockResponse messages in a separate task to not block the
-            // inbound queue.
-            tokio::spawn(async move {
-                self_.process_message_inner(peer_addr, message).await;
-            });
-        } else {
-            self.process_message_inner(peer_addr, message).await;
-        }
+        self.process_message_inner(peer_addr, message).await;
         Ok(())
     }
 

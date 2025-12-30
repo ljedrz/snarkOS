@@ -27,9 +27,6 @@ pub use batch_signature::BatchSignature;
 mod block_request;
 pub use block_request::BlockRequest;
 
-mod block_response;
-pub use block_response::{BlockResponse, DataBlocks};
-
 mod certificate_request;
 pub use certificate_request::CertificateRequest;
 
@@ -69,14 +66,10 @@ pub use worker_ping::WorkerPing;
 use snarkos_node_sync_locators::BlockLocators;
 use snarkvm::{
     console::prelude::{FromBytes, Network, Read, ToBytes, Write, error, io_error},
-    ledger::{
-        block::Block,
-        narwhal::{BatchCertificate, BatchHeader, Data, Transmission, TransmissionID},
-    },
+    ledger::narwhal::{BatchCertificate, BatchHeader, Data, Transmission, TransmissionID},
     prelude::{Address, Field, Signature},
 };
 
-use anyhow::{Result, bail, ensure};
 use indexmap::{IndexMap, IndexSet};
 use serde::{Deserialize, Serialize};
 pub use std::io::{self, Result as IoResult};
@@ -96,7 +89,6 @@ pub enum Event<N: Network> {
     BatchSignature(BatchSignature<N>),
     BatchCertified(BatchCertified<N>),
     BlockRequest(BlockRequest),
-    BlockResponse(BlockResponse<N>),
     CertificateRequest(CertificateRequest<N>),
     CertificateResponse(CertificateResponse<N>),
     ChallengeRequest(ChallengeRequest<N>),
@@ -128,7 +120,6 @@ impl<N: Network> Event<N> {
             Self::BatchSignature(event) => event.name(),
             Self::BatchCertified(event) => event.name(),
             Self::BlockRequest(event) => event.name(),
-            Self::BlockResponse(event) => event.name(),
             Self::CertificateRequest(event) => event.name(),
             Self::CertificateResponse(event) => event.name(),
             Self::ChallengeRequest(event) => event.name(),
@@ -151,7 +142,7 @@ impl<N: Network> Event<N> {
             Self::BatchSignature(..) => 1,
             Self::BatchCertified(..) => 2,
             Self::BlockRequest(..) => 3,
-            Self::BlockResponse(..) => 4,
+            // 4 used to be BlockResponse
             Self::CertificateRequest(..) => 5,
             Self::CertificateResponse(..) => 6,
             Self::ChallengeRequest(..) => 7,
@@ -176,7 +167,6 @@ impl<N: Network> ToBytes for Event<N> {
             Self::BatchSignature(event) => event.write_le(writer),
             Self::BatchCertified(event) => event.write_le(writer),
             Self::BlockRequest(event) => event.write_le(writer),
-            Self::BlockResponse(event) => event.write_le(writer),
             Self::CertificateRequest(event) => event.write_le(writer),
             Self::CertificateResponse(event) => event.write_le(writer),
             Self::ChallengeRequest(event) => event.write_le(writer),
@@ -203,7 +193,6 @@ impl<N: Network> FromBytes for Event<N> {
             1 => Self::BatchSignature(BatchSignature::read_le(&mut reader)?),
             2 => Self::BatchCertified(BatchCertified::read_le(&mut reader)?),
             3 => Self::BlockRequest(BlockRequest::read_le(&mut reader)?),
-            4 => Self::BlockResponse(BlockResponse::read_le(&mut reader)?),
             5 => Self::CertificateRequest(CertificateRequest::read_le(&mut reader)?),
             6 => Self::CertificateResponse(CertificateResponse::read_le(&mut reader)?),
             7 => Self::ChallengeRequest(ChallengeRequest::read_le(&mut reader)?),
@@ -215,7 +204,7 @@ impl<N: Network> FromBytes for Event<N> {
             13 => Self::ValidatorsRequest(ValidatorsRequest::read_le(&mut reader)?),
             14 => Self::ValidatorsResponse(ValidatorsResponse::read_le(&mut reader)?),
             15 => Self::WorkerPing(WorkerPing::read_le(&mut reader)?),
-            16.. => return Err(error(format!("Unknown event ID {id}"))),
+            4 | 16.. => return Err(error(format!("Unknown event ID {id}"))),
         };
 
         // Ensure that there are no "dangling" bytes.

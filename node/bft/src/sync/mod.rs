@@ -17,14 +17,20 @@ use crate::{
     Gateway,
     MAX_FETCH_TIMEOUT_IN_MS,
     Transport,
-    events::DataBlocks,
     helpers::{BFTSender, Pending, Storage, SyncReceiver, fmt_id, max_redundant_requests},
     spawn_blocking,
 };
 use snarkos_node_bft_events::{CertificateRequest, CertificateResponse, Event};
 use snarkos_node_bft_ledger_service::LedgerService;
 use snarkos_node_network::PeerPoolHandling;
-use snarkos_node_sync::{BLOCK_REQUEST_BATCH_DELAY, BlockSync, Ping, PrepareSyncRequest, locators::BlockLocators};
+use snarkos_node_sync::{
+    BLOCK_REQUEST_BATCH_DELAY,
+    BlockResponse,
+    BlockSync,
+    Ping,
+    PrepareSyncRequest,
+    locators::BlockLocators,
+};
 
 use snarkvm::{
     console::{
@@ -150,14 +156,13 @@ impl<N: Network> Sync<N> {
     #[inline]
     async fn send_block_requests(
         &self,
-
         block_requests: Vec<(u32, PrepareSyncRequest<N>)>,
         sync_peers: IndexMap<SocketAddr, BlockLocators<N>>,
     ) {
         trace!("Prepared {num_requests} block requests", num_requests = block_requests.len());
 
         // Sends the block requests to the sync peers.
-        for requests in block_requests.chunks(DataBlocks::<N>::MAXIMUM_NUMBER_OF_BLOCKS as usize) {
+        for requests in block_requests.chunks(BlockResponse::<N>::MAXIMUM_NUMBER_OF_BLOCKS as usize) {
             if !self.block_sync.send_block_requests(&self.gateway, &sync_peers, requests).await {
                 // Stop if we fail to process a batch of requests.
                 break;

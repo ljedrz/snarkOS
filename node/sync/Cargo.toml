@@ -31,6 +31,9 @@ test = [ "snarkos-node-sync-locators/test" ]
 [dependencies.anyhow]
 workspace = true
 
+[dependencies.bytes]
+workspace = true
+
 [dependencies.indexmap]
 workspace = true
 features = [ "serde", "rayon" ]
@@ -82,7 +85,13 @@ workspace = true
 [dependencies.snarkvm]
 workspace = true
 
+[dependencies.tokio-util]
+workspace = true
+
 [dependencies.tracing]
+workspace = true
+
+[dev-dependencies.proptest]
 workspace = true
 
 [dev-dependencies.snarkos-node-bft-ledger-service]
@@ -103,6 +112,9 @@ features = [ "test-helpers" ]
 [dev-dependencies.snarkvm]
 workspace = true
 features = [ "test-helpers" ]
+
+[dev-dependencies.test-strategy]
+workspace = true
 
 [dev-dependencies.tracing-subscriber]
 workspace = true

@@ -26,7 +26,7 @@ use snarkos_node_router::messages::{
     UnconfirmedTransaction,
 };
 use snarkos_node_tcp::{Connection, ConnectionSide, Tcp};
-use snarkvm::prelude::{ConsensusVersion, Field, Network, Zero, block::Transaction};
+use snarkvm::prelude::{Field, Network, Zero, block::Transaction};
 
 use std::{io, net::SocketAddr};
 
@@ -162,17 +162,6 @@ impl<N: Network, C: ConsensusStorage<N>> Inbound<N> for Prover<N, C> {
 
     /// Handles a `BlockRequest` message.
     fn block_request(&self, peer_ip: SocketAddr, _message: BlockRequest) -> bool {
-        debug!("Disconnecting '{peer_ip}' for the following reason - {}", DisconnectReason::ProtocolViolation);
-        false
-    }
-
-    /// Handles a `BlockResponse` message.
-    fn block_response(
-        &self,
-        peer_ip: SocketAddr,
-        _blocks: Vec<Block<N>>,
-        _latest_consensus_version: Option<ConsensusVersion>,
-    ) -> bool {
         debug!("Disconnecting '{peer_ip}' for the following reason - {}", DisconnectReason::ProtocolViolation);
         false
     }

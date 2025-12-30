@@ -14,12 +14,12 @@
 // limitations under the License.
 
 use crate::{
+    block_response::BlockResponse,
     helpers::{PeerPair, PrepareSyncRequest, SyncRequest},
     locators::BlockLocators,
 };
 use snarkos_node_bft_ledger_service::LedgerService;
 use snarkos_node_network::PeerPoolHandling;
-use snarkos_node_router::messages::DataBlocks;
 use snarkos_node_sync_communication_service::CommunicationService;
 use snarkos_node_sync_locators::{CHECKPOINT_INTERVAL, NUM_RECENT_BLOCKS};
 
@@ -792,7 +792,7 @@ impl<N: Network> BlockSync<N> {
 
         // Ensure to not exceed the maximum number of outstanding block requests.
         let max_outstanding_block_requests =
-            (MAX_BLOCK_REQUESTS as u32) * (DataBlocks::<N>::MAXIMUM_NUMBER_OF_BLOCKS as u32);
+            (MAX_BLOCK_REQUESTS as u32) * (BlockResponse::<N>::MAXIMUM_NUMBER_OF_BLOCKS as u32);
 
         // Ensure there is a finite bound on the number of block respnoses we receive, that have not been processed yet.
         let max_total_requests = 4 * max_outstanding_block_requests;

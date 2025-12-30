@@ -17,8 +17,6 @@ use super::*;
 use snarkos_node_network::PeerPoolHandling;
 use snarkos_node_router::messages::{
     BlockRequest,
-    BlockResponse,
-    DataBlocks,
     DisconnectReason,
     Message,
     MessageCodec,
@@ -26,9 +24,10 @@ use snarkos_node_router::messages::{
     Pong,
     UnconfirmedTransaction,
 };
+use snarkos_node_sync::DataBlocks;
 use snarkos_node_tcp::{Connection, ConnectionSide, Tcp};
 use snarkvm::{
-    console::network::{ConsensusVersion, Network},
+    console::network::Network,
     ledger::{block::Transaction, narwhal::Data},
     utilities::{flatten_error, io_error},
 };
@@ -110,16 +109,7 @@ impl<N: Network, C: ConsensusStorage<N>> Reading for Validator<N, C> {
 
     /// Processes a message received from the network.
     async fn process_message(&self, peer_addr: SocketAddr, message: Self::Message) -> io::Result<()> {
-        let clone = self.clone();
-        if matches!(message, Message::BlockRequest(_) | Message::BlockResponse(_)) {
-            // Handle BlockRequest and BlockResponse messages in a separate task to not block the
-            // inbound queue.
-            tokio::spawn(async move {
-                clone.process_message_inner(peer_addr, message).await;
-            });
-        } else {
-            self.process_message_inner(peer_addr, message).await;
-        }
+        self.process_message_inner(peer_addr, message).await;
         Ok(())
     }
 }
@@ -202,20 +192,9 @@ impl<N: Network, C: ConsensusStorage<N>> Inbound<N> for Validator<N, C> {
             }
         };
         // Send the `BlockResponse` message to the peer.
-        self.router()
-            .send(peer_ip, Message::BlockResponse(BlockResponse::new(message, blocks, latest_consensus_version)));
+        // self.router()
+        //     .send(peer_ip, Message::BlockResponse(BlockResponse::new(message, blocks, latest_consensus_version)));
         true
-    }
-
-    /// Handles a `BlockResponse` message.
-    fn block_response(
-        &self,
-        peer_ip: SocketAddr,
-        _blocks: Vec<Block<N>>,
-        _latest_consensus_version: Option<ConsensusVersion>,
-    ) -> bool {
-        warn!("Received a block response through P2P, not BFT, from {peer_ip}");
-        false
     }
 
     /// Processes a ping message from a client (or prover) and sends back a `Pong` message.

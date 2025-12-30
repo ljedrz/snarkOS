@@ -16,7 +16,7 @@
 mod router;
 
 use crate::{
-    bft::{events::DataBlocks, helpers::fmt_id, ledger_service::CoreLedgerService, spawn_blocking},
+    bft::{helpers::fmt_id, ledger_service::CoreLedgerService, spawn_blocking},
     cdn::CdnBlockSync,
     traits::NodeInterface,
 };
@@ -32,7 +32,14 @@ use snarkos_node_router::{
     Routing,
     messages::{Message, UnconfirmedSolution, UnconfirmedTransaction},
 };
-use snarkos_node_sync::{BLOCK_REQUEST_BATCH_DELAY, BlockSync, Ping, PrepareSyncRequest, locators::BlockLocators};
+use snarkos_node_sync::{
+    BLOCK_REQUEST_BATCH_DELAY,
+    BlockResponse,
+    BlockSync,
+    Ping,
+    PrepareSyncRequest,
+    locators::BlockLocators,
+};
 use snarkos_node_tcp::{
     P2P,
     protocols::{Disconnect, Handshake, OnConnect, Reading},
@@ -391,7 +398,7 @@ impl<N: Network, C: ConsensusStorage<N>> Client<N, C> {
         sync_peers: IndexMap<SocketAddr, BlockLocators<N>>,
     ) {
         // Issues the block requests in batches.
-        for requests in block_requests.chunks(DataBlocks::<N>::MAXIMUM_NUMBER_OF_BLOCKS as usize) {
+        for requests in block_requests.chunks(BlockResponse::<N>::MAXIMUM_NUMBER_OF_BLOCKS as usize) {
             if !self.sync.send_block_requests(self.router(), &sync_peers, requests).await {
                 // Stop if we fail to process a batch of requests.
                 break;
